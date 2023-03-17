@@ -9,3 +9,4 @@ A library for models and tools related to the research of biological oscillation
 
 ## Description
 BiologicalOscillations provides a set of tools and models for the study of biological oscillations using differential equations.
+
