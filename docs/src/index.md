@@ -1,0 +1,3 @@
+# BiologicalOscillations.jl Documentation
+
+BiologicalOscillations is a computational package for researchers studying biological oscillations. The package implements published mathematical models of oscillatory phenomena in a wide variety of areas such as cell cycle dynamics, circadian rhythms, synthetic biology, and embryonic development. The implementation leverages several tools across the Julia SciML ecosystem such as [Catalyst.jl](https://docs.sciml.ai/Catalyst/stable/), [DSP.jl](https://github.com/JuliaDSP/DSP.jl), and [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/). 
