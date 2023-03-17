@@ -51,34 +51,25 @@ odesys = convert(ODESystem, elowitz_2000) # hide
 eq = latexify(odesys) # hide
 LaTeXEquation(eq) # hide
 ```
+
 where 
+
 ```math
 \text{hillr}(P(t), \alpha, K, n) = \alpha \frac{K^n}{P(t)^n + K^n}
 ```
-Using parameters 
 
-```math
-\begin{aligned}
-\alpha_1 = \alpha_2 = \alpha_3 &= 0.5 \\
-\beta_1 = \beta_2 = \beta_3 &= 0.05 \\
-\gamma_1 = \gamma_2 = \gamma_3 &= 0.005 \\
-\delta_1 = \delta_2 = \delta_3 &= 0.0025 \\
-K_1 = K_2 = K_3 &= 40 \\
-n_1 = n_2 = n_3 &= 2 \\
-\mu_1 = \mu_2 = \mu_3 &= 0.005
-\end{aligned}
-```
+We can obtain an oscillatory solution by using the following parameters 
 
-Under the initial condition
+|  |  |  |  |  |  |  |  |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| $\alpha_1, \alpha_2, \alpha_3$ | 0.5 | $K_1, K_2, K_3$ | 40 | $\beta_1, \beta_2, \beta_3$ | 0.05 | $n_1, n_2, n_3$ | 2 |
+| $\gamma_1, \gamma_2, \gamma_3$ | 0.005 | $\mu_1, \mu_2, \mu_3$ | 0.005 | $\delta_1, \delta_2, \delta_3$ | 0.0025 |  |  |
 
-```math
-\begin{aligned}
-m_1(0) = m_2(0) = m_3(0) &= 0.0 \\
-P_1(0) &= 20.0 \\
-P_2(0) = P_3(0) &= 0.0
-\end{aligned}
-```
-we obtain:
+and the initial condition
+
+|  |  |  |  |  |  |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| $m_1(0), m_2(0), m_3(0)$ | 0.0 | $P_1(0)$ | 20.0 | $P_2(0), P_3(0)$ | 0.0 |
 
 ```@example elowitz_2000
 plot(sol) # hide
