@@ -4,7 +4,7 @@
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://ftavella.github.io/BiologicalOscillations.jl/stable)
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://ftavella.github.io/BiologicalOscillations.jl/dev)
 
-A package and model repository for the research of biological oscillators.
+A computational package for the research of biological oscillators.
 
 ## Description
 BiologicalOscillations provides a set of tools and models for the study of biological oscillations using differential equations.
