@@ -84,3 +84,20 @@ function calculate_amplitude(ode_solution::ODESolution)
     end
     return Dict("amplitude" => amplitude, "peak_variation" => peak_variation, "trough_variation" => trough_variation)
 end
+
+
+"""
+    is_ODE_oscillatory(frequency_data::Dict, amplitude_data::Dict, freq_diff_threshold=0.05, power_threshold=1e-7, amp_variation_threshold=0.01)
+
+Determines if an `ODESolution` is oscillatory based on the calculated frequency and amplitude.
+
+# Arguments
+- `frequency_data::Dict`: The output from [`calculate_main_frequency`](@ref)
+- `amplitude_data::Dict`: The output from [`calculate_amplitude`](@ref)
+- `freq_diff_threhsold::Real`: Maximum tolerated difference in frequency between species in the solution to be declared oscillatory. Default value 0.05.
+- `power_threshold::Real`: Minimum spectral power that the main peak has to have to be declared oscillatory. Default value 1e-7.
+- `amp_variation_threhsold::Real`: Maximum tolerated value for peak/trough variation to be declared oscillatory. Default value 0.01.
+"""
+function is_ODE_oscillatory(frequency_data::Dict, amplitude_data::Dict, freq_diff_threshold=0.05, power_threshold=1e-7, amp_variation_threshold=0.05)
+
+end

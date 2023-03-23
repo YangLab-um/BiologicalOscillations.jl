@@ -5,6 +5,6 @@ pages = Any["Home" => "index.md",
             "Gene Regulatory Networks" => Any["gene_regulatory_network/grn_introduction.md", 
                                               "gene_regulatory_network/grn_model_details.md", 
                                               "gene_regulatory_network/grn_documentation.md"],
-            "Feature Calculation" => Any["feature_calculation/fc_introduction.md"],
+            "Feature Calculation" => Any["feature_calculation/fc_documentation.md"],
             "Models" => Any["models/elowitz_2000.md"],
 ]
