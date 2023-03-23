@@ -22,19 +22,19 @@ function calculate_main_frequency(ode_solution::ODESolution, sampling::Int, fft_
     main_frequency = fill(NaN, number_of_signals)
     main_power = fill(NaN, number_of_signals)
     signal_sampling = LinRange(ode_solution.t[1], ode_solution.t[end], sampling)
-    sampling_frequency = round(Int, sampling / (ode_solution.t[end] - ode_solution.t[1]))
+    sampling_frequency = sampling / (ode_solution.t[end] - ode_solution.t[1])
     for i in 1:number_of_signals
-        # Remove mean -- Avoids a dominant low frequency
+        # Remove mean -- Avoids a dominant low frequency caused by mean ≠ 0
         signal = ode_solution(signal_sampling)[i,:] .- mean(ode_solution(signal_sampling)[i,:])
         spectrum = periodogram(signal; fs=sampling_frequency, nfft=fft_points)
-        frequency_peaks, ~ = findmaxima(pgram.power)
-        # Remove small peaks -- Discard any peak with height less than 1/3 of the largest
+        frequency_peaks, ~ = findmaxima(spectrum.power)
+        # Remove small peaks -- Discard any peak with height less than 1/3 of the largest spectral value
         frequency_peaks, ~ = peakproms(frequency_peaks, spectrum.power, minprom=maximum(spectrum.power)/3.0)
-        if length(pks) >= 1
+        if length(frequency_peaks) >= 1
             # From the top peaks save the one with the lowest frequency
-            best_vals = sort(collect(zip(pgram.freq[pks], pgram.power[pks])); by=first)
-            main_frequencies[i] = best_vals[1][1]
-            main_powers[i] = best_vals[1][2]
+            freq_power_sorted = sort(collect(zip(spectrum.freq[frequency_peaks], spectrum.power[frequency_peaks])); by=first)
+            main_frequency[i] = freq_power_sorted[1][1]
+            main_power[i] = freq_power_sorted[1][2]
         end
     end
 

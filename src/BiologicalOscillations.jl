@@ -1,7 +1,7 @@
 module BiologicalOscillations
 
 using Catalyst, DifferentialEquations, ModelingToolkit, Latexify
-using Statistics
+using Statistics, DSP, Peaks
 
 export elowitz_2000
 export calculate_main_frequency, calculate_amplitude
