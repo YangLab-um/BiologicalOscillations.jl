@@ -74,3 +74,9 @@ generated_parameters = pin_parameters(generated_goodwin, α, β, γ, κ, η)
 @test generated_parameters[13] == γ[3]
 @test generated_parameters[14] == κ[3]
 @test generated_parameters[15] == η[3]
+
+
+# Test that the correct timescale is obtained
+timescale = pin_timescale(α, β, γ)
+
+@test timescale == 1.0/0.1

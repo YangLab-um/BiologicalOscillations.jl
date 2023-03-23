@@ -98,3 +98,21 @@ function grn_parameters(model::ReactionSystem, α::AbstractVector, β::AbstractV
     end
     return ModelingToolkit.varmap_to_vars(Dict(new_map_vals), parameters(model))
 end
+
+
+"""
+    grn_timescale(α::AbstractVector, δ::AbstractVector)
+
+Calculate the slowest timescale of the gene regulatory network
+
+# Arguments
+- `α:AbstractVector`: Vector of intrinsic mRNA degradation rates
+- `δ:AbstractVector`: Vector of intrinsic protein degradation rates
+
+# Returns
+- `timescale::Real`
+"""
+function grn_timescale(α::AbstractVector, δ::AbstractVector)
+    rates = vcat(α, δ)
+    return 1.0 / minimum(rates)
+end

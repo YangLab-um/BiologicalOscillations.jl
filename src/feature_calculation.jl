@@ -9,10 +9,11 @@ Obtains the dominant frequencies and their powers for each signal on `ode_soluti
 - `fft_points::Int`: Number of points in the frequency spectrum
 
 # Returns
-- `Dict`: Dictionary containing the dominant frequencies and their powers for each signal. Here power means the amplitude of that frequency on the FFT spectrum. The output is encoded as: 
-    ```julia
-    {'frequency': [freq_signal_1, ..., freq_signal_N], 'power': [power_signal_1, ..., power_signal_N]}
-    ```
+- `frequency_data::Dict`: Dictionary containing the dominant frequencies and their powers for each signal. Here power means the amplitude of that frequency on the FFT spectrum. The output is encoded as:
+```julia
+frequency_data = Dict('frequency' => [freq_signal_1, ..., freq_signal_N], 
+                      'power' => [power_signal_1, ..., power_signal_N])
+```
 
 # Note
 - The provided `ode_solution` has to be solved with the `dense = true` setting to be suitable for this function since uniform re-sampling is performed.
@@ -51,10 +52,12 @@ Calculate the amplitude of each signal in `ode_solution` and the relative peak/t
 - `ode_solution::ODESolution`: The full output of the `solve()` function from `DifferentialEquations.jl`
 
 # Returns
-- `Dict`: Dictionary containing the amplitude for each signal and the peak/trough variation. The output is encoded as: 
-    ```julia
-    {'amplitude': [amp_signal_1, ..., amp_signal_N], 'peak_variation': [peak_variation_signal_1, ..., peak_variation_signal_N], 'trough_variation': [trough_variation_signal_1, ..., trough_variation_signal_N]}
-    ```
+- `amplitude_data::Dict`: Dictionary containing the amplitude for each signal and the peak/trough variation. The output is encoded as: 
+```julia
+amplitude_data = Dict('amplitude' => [amp_signal_1, ..., amp_signal_N], 
+                      'peak_variation' => [peak_variation_signal_1, ..., peak_variation_signal_N], 
+                      'trough_variation' => [trough_variation_signal_1, ..., trough_variation_signal_N])
+```
 
 # Notes
 - Variation of peaks and troughs is calculated as the standard deviation of all the peaks/troughs in the signal divided by the amplitude. This quantity allows to distinguish stable oscillatory solution from dampened ones.
@@ -87,17 +90,38 @@ end
 
 
 """
-    is_ODE_oscillatory(frequency_data::Dict, amplitude_data::Dict, freq_diff_threshold=0.05, power_threshold=1e-7, amp_variation_threshold=0.01)
+    is_ODE_oscillatory(frequency_data::Dict, amplitude_data::Dict, freq_variation_threshold=0.05, power_threshold=1e-7, amp_variation_threshold=0.01)
 
-Determines if an `ODESolution` is oscillatory based on the calculated frequency and amplitude.
+Returns true if an `ODESolution` is oscillatory based on the calculated frequency and amplitude. False otherwise.
 
 # Arguments
 - `frequency_data::Dict`: The output from [`calculate_main_frequency`](@ref)
 - `amplitude_data::Dict`: The output from [`calculate_amplitude`](@ref)
-- `freq_diff_threhsold::Real`: Maximum tolerated difference in frequency between species in the solution to be declared oscillatory. Default value 0.05.
+- `freq_variation_threhsold::Real`: Maximum tolerated variation in frequency between species in the solution to be declared oscillatory. Default value 0.05.
 - `power_threshold::Real`: Minimum spectral power that the main peak has to have to be declared oscillatory. Default value 1e-7.
 - `amp_variation_threhsold::Real`: Maximum tolerated value for peak/trough variation to be declared oscillatory. Default value 0.01.
 """
-function is_ODE_oscillatory(frequency_data::Dict, amplitude_data::Dict, freq_diff_threshold=0.05, power_threshold=1e-7, amp_variation_threshold=0.05)
+function is_ODE_oscillatory(frequency_data::Dict, amplitude_data::Dict, freq_variation_threshold=0.05, power_threshold=1e-7, amp_variation_threshold=0.01)
+    # If any quantity is NaN, the system isn't considered oscillatory
+    freq_is_nan = any(isnan.(frequency_data["frequency"]))
+    amp_is_nan = any(isnan.(amplitude_data["amplitude"]))
+    if freq_is_nan || amp_is_nan
+        return false
+    end
+    # Frequency stability
+    mean_freq = mean(frequency_data["frequency"])
+    freq_variation = mean(frequency_data["frequency"] .- mean_freq) / mean_freq
+    freq_is_stable = freq_variation < freq_variation_threshold
+    # Power amplitude
+    power_is_significant = all(frequency_data["power"] .> power_threshold)
+    # Peak variation
+    peak_is_stable = all(amplitude_data["peak_variation"] .< amp_variation_threshold)
+    # Trough variation
+    trough_is_stable = all(amplitude_data["trough_variation"] .< amp_variation_threshold)
 
+    if freq_is_stable && power_is_significant && peak_is_stable && trough_is_stable
+        return true
+    else
+        return false
+    end
 end

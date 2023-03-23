@@ -89,3 +89,22 @@ function pin_parameters(model::ReactionSystem, α::AbstractVector, β::AbstractV
     end
     return ModelingToolkit.varmap_to_vars(Dict(new_map_vals), parameters(model))
 end
+
+
+"""
+    pin_timescale(α::AbstractVector, β::AbstractVector, γ::AbstractVector)
+
+Calculate the slowest timescale of the protein interaction network
+
+# Arguments
+- `α:AbstractVector`: Vector of intrinsic protein activation rates for each node
+- `β:AbstractVector`: Vector of intrinsic protein deactivation rates for each node
+- `γ:AbstractVector`: Vector of strengths for each network interaction
+
+# Returns
+- `timescale::Real`
+"""
+function pin_timescale(α::AbstractVector, β::AbstractVector, γ::AbstractVector)
+    rates = vcat(α, β, γ)
+    return 1.0 / minimum(rates)
+end

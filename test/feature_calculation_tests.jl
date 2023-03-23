@@ -34,6 +34,8 @@ frequency_data = calculate_main_frequency(brusselator_sol, signal_sampling, spec
 @test abs(amplitude_data["trough_variation"][1] - 4.5e-5)/4.5e-5 < 0.05
 @test abs(amplitude_data["trough_variation"][2] - 5.6e-5)/5.6e-5 < 0.05
 
+@test is_ODE_oscillatory(frequency_data, amplitude_data) == true
+
 # Repressilator
 repressilator = @reaction_network Repressilator begin
     hillr(P₃,α,K,n), ∅ --> m₁
@@ -97,6 +99,8 @@ frequency_data = calculate_main_frequency(repressilator_sol, signal_sampling, sp
 @test abs(amplitude_data["trough_variation"][5] - 0.00069)/0.00069 < 0.05
 @test abs(amplitude_data["trough_variation"][6] - 0.0011)/0.0011 < 0.05
 
+@test is_ODE_oscillatory(frequency_data, amplitude_data) == true
+
 # Steady state solutions should return have small power values and NaN amplitude
 # Brusselator
 p = [1.1, 1.2, 0.9, 1.3]
@@ -115,6 +119,8 @@ frequency_data = calculate_main_frequency(brusselator_sol, signal_sampling, spec
 @test mean(frequency_data["power"]) < 1e-5
 @test all(isnan.(amplitude_data["amplitude"]))
 
+@test is_ODE_oscillatory(frequency_data, amplitude_data) == false
+
 # Repressilator
 pmap  = (:α => 1, :K => 20, :n => 1, :δ => 0.5,
          :γ => 5e-3, :β => 0.5, :μ => 0.5)
@@ -132,3 +138,5 @@ frequency_data = calculate_main_frequency(repressilator_sol, signal_sampling, sp
 
 @test mean(frequency_data["power"]) < 1e-5
 @test all(isnan.(amplitude_data["amplitude"]))
+
+@test is_ODE_oscillatory(frequency_data, amplitude_data) == false
