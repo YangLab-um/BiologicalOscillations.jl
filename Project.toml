@@ -24,6 +24,7 @@ DocumenterTools = "0.1"
 Latexify = "0.15"
 ModelingToolkit = "8"
 Plots = "1"
+Revise = "3"
 julia = "1.8"
 
 [extras]
