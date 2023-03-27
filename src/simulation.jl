@@ -1,7 +1,7 @@
 """
     equilibrate_ODEs(model::ReactionSystem, parameter_sets::AbstractVector, initial_conditions::AbstractVector, equilibration_times::AbstractVector, solver=RadauIIA5(), abstol=1e-7, reltol=1e-4, maxiters=1e7)
 
-    Simulates a `model` for the different `parameter_sets` until the predetermined `equilibration_times` are reached.
+Simulates a `model` for the different `parameter_sets` until the predetermined `equilibration_times` are reached.
 
 # Arguments (Required)
 - model::ReactionSystem: A set of differential equations encoded as a reaction ReactionSystem
@@ -23,7 +23,7 @@ equilibration_data = Dict('final_state' => [[final_state_pset1_var1, ..., final_
                           'frequency' => [frequency_pset1, ..., frequency_psetM])
 ```
 """
-function equilibrate_ODEs(model::ReactionSystem, parameter_sets::AbstractVector, initial_conditions::AbstractVector, equilibration_times::AbstractVector, solver=RadauIIA5(), abstol=1e-7, reltol=1e-4, maxiters=1e7)
+function equilibrate_ODEs(model::ReactionSystem, parameter_sets::AbstractVector, initial_conditions::AbstractVector, equilibration_times::AbstractVector; solver=RadauIIA5(), abstol=1e-7, reltol=1e-4, maxiters=1e7)
     number_of_psets = size(parameter_sets, 1)
     # Define problem and output functions for EnsembleProblem
     function prob_function(prob::ODEProblem, i, ~)
@@ -52,4 +52,54 @@ function equilibrate_ODEs(model::ReactionSystem, parameter_sets::AbstractVector,
                               "frequency" => [simulation.u[i][3] for i=axes(simulation.u, 1)])
 
     return equilibration_data
+end
+
+
+"""
+    generate_parameter_sets(samples::Int, parameter_limits::AbstractVector, sampling_scales::AbstractVector, sampling_style="lhc")
+
+Creates an array of parameter sets within the limits provided in `parameter_limits` using either Latin Hypercube Sampling or Random Sampling. Each parameter can be sampled linearly or logarithmically.
+
+# Arguments (Required)
+- samples::Int: Number of parameter sets to be generated
+- parameter_limits::AbstractVector: Array of tuples defining the lower and upper limits of each individual parameter in a model. The length of this array is used to calculate the number of parameters in each parameter set.
+- sampling_scales::AbstractVector: Array of strings containing the sampling scale for each individual parameter in a model. Accepted strings are "linear" and "log".
+
+# Arguments (Optional)
+- sampling_style::String: Sampling style of the algorithm. Accepted strings are "lhc" and "random".
+
+# Returns
+- parameter_sets::AbstractVector: Array of parameter sets of length `samples`.
+"""
+function generate_parameter_sets(samples::Int, parameter_limits::AbstractVector, sampling_scales::AbstractVector; sampling_style="lhc")
+    number_of_parameters = length(parameter_limits)
+    # Draw sample
+    if lowercase(sampling_style) == "lhc"
+        LHCplan = randomLHC(samples, number_of_parameters)
+    elseif lowercase(sampling_style) == "random"
+        LHCplan = rand([i for i in 1:samples], samples, number_of_parameters)
+    end
+
+    # Rescale parameters
+    scaling_plan = Tuple{Float64,Float64}[]
+    for (idx, limits) in enumerate(parameter_limits)
+        if sampling_scales[idx] == "linear"
+            scaling_plan = vcat(scaling_plan, [limits])
+        elseif sampling_scales[idx] == "log"
+            scaling_plan = vcat(scaling_plan, [(log10(limits[1]), log10(limits[2]))])
+        end
+    end
+
+    LHC = scaleLHC(LHCplan, scaling_plan)
+
+    for (idx, scale) in enumerate(sampling_scales)
+        if scale == "log"
+            LHC[:,idx] = 10 .^ LHC[:,idx]
+        end
+    end
+
+    # Format output as a vector of vectors
+    parameter_sets = [LHC[i,:] for i=axes(LHC,1)]
+    
+    return parameter_sets
 end
