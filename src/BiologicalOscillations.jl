@@ -4,7 +4,7 @@ using Catalyst, DifferentialEquations, ModelingToolkit, Latexify
 using Statistics, DSP, Peaks, LatinHypercubeSampling
 
 export elowitz_2000
-export equilibrate_ODEs, generate_parameter_sets
+export generate_parameter_sets, equilibrate_ODEs, simulate_ODEs
 export calculate_main_frequency, calculate_amplitude, is_ODE_oscillatory
 export protein_interaction_network, pin_parameters, pin_timescale
 export gene_regulatory_network, grn_parameters, grn_timescale
