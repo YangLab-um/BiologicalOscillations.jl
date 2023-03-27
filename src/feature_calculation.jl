@@ -55,8 +55,8 @@ Calculate the amplitude of each signal in `ode_solution` and the relative peak/t
 - `amplitude_data::Dict`: Dictionary containing the amplitude for each signal and the peak/trough variation. The output is encoded as: 
 ```julia
 amplitude_data = Dict('amplitude' => [amp_signal_1, ..., amp_signal_N], 
-                      'peak_variation' => [peak_variation_signal_1, ..., peak_variation_signal_N], 
-                      'trough_variation' => [trough_variation_signal_1, ..., trough_variation_signal_N])
+                      'peak_variation' => [peak_var_signal_1, ..., peak_var_signal_N], 
+                      'trough_variation' => [trough_var_signal_1, ..., trough_var_signal_N])
 ```
 
 # Notes
