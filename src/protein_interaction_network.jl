@@ -330,3 +330,48 @@ function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; initi
     
     return pin_result
 end
+
+
+"""
+    pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target_oscillations::Int=100, max_samples::Int=1000000, max_trials::Int=5)
+
+Estimates the hit rate of the oscillatory parameter set search in a protein interaction network
+
+# Arguments (Required)
+- `connectivity::AbstractMatrix`: Connectivity matrix of the protein interaction network
+- `initial_samples::Int`: Number of parameter sets to sample in the first trial
+
+# Arguments (Optional)
+- `target_oscillations::Int`: Target number of oscillatory parameter sets
+- `max_samples::Int`: Maximum number of samples allowed
+- `max_trials::Int`: Maximum number of trials allowed
+
+# Returns
+- `hit_rate::Real`: Estimated hit rate
+"""
+function pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target_oscillations::Int=100, max_samples::Int=1000000, max_trials::Int=5)
+    pin_result = find_pin_oscillations(connectivity, initial_samples)
+    oscillatory = sum(pin_result["oscillatory_status"])
+    println("Oscillatory: $oscillatory, Samples $initial_samples")
+    hit_rate =  oscillatory / initial_samples
+
+    if oscillatory > target_oscillations
+        return hit_rate
+    else
+        samples = initial_samples
+        trial = 1
+        while oscillatory < target_oscillations && trial < max_trials && samples < max_samples
+            if oscillatory == 0
+                samples = 2*samples
+            else
+                samples = ceil(Int, samples * (target_oscillations + 10) / oscillatory)
+            end
+            pin_result = find_pin_oscillations(connectivity, samples)
+            oscillatory = sum(pin_result["oscillatory_status"])
+            println("Oscillatory: $oscillatory, Samples $samples")
+            hit_rate = oscillatory / samples
+            trial += 1
+        end
+        return hit_rate
+    end
+end

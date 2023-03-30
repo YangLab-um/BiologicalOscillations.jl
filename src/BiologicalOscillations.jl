@@ -8,6 +8,7 @@ export generate_parameter_sets, equilibrate_ODEs, simulate_ODEs
 export calculate_main_frequency, calculate_amplitude, is_ODE_oscillatory
 export protein_interaction_network, pin_parameters, pin_timescale, pin_parameter_sets
 export pin_equilibration_times, pin_simulation_times, pin_oscillatory_status, find_pin_oscillations
+export pin_hit_rate
 export gene_regulatory_network, grn_parameters, grn_timescale
 
 include("models.jl")
