@@ -131,7 +131,7 @@ end
 
 
 """
-    pin_parameter_sets(model::ReactionSystem, samples::Int; parameter_limits=Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), "γ" => (1e2, 1e4), "κ" => (0.2, 1.0), "η" => (1.0, 5.0)), sampling_scales=Dict("α" => "log", "β" => "log", "γ" => "log", "κ" => "linear", "η" => "linear"), sampling_style="lhc")
+    pin_parameter_sets(model::ReactionSystem, samples::Int; dimensionless_time=true, parameter_limits=Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), "γ" => (1e2, 1e4), "κ" => (0.2, 1.0), "η" => (1.0, 5.0)), sampling_scales=Dict("α" => "log", "β" => "log", "γ" => "log", "κ" => "linear", "η" => "linear"), sampling_style="lhc")
 
 Creates an array of parameter sets for a protein interaction network model.
     
@@ -140,6 +140,7 @@ Creates an array of parameter sets for a protein interaction network model.
 - `samples::Int`: Number of parameter sets to be generated
 
 # Arguments (Optional)
+- `dimensionless_time::Bool`: If `true`, α₁ is set to 1.0 for all parameter sets, making time dimensionless. Default value is `true`
 - `parameter_limits::Dict`: Dictionary encoding the lower and upper limit of each parameter (in the form of a tuple). Default value is
 ```julia
 parameter_limits = Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), 
@@ -151,7 +152,7 @@ sampling_scales = Dict("α" => "log", "β" => "log", "γ" => "log", "κ" => "lin
 ```
 - `sampling_style::String`: Sampling style of the algorithm. Accepted strings are "lhc" and "random". Default value is "lhc".
 """
-function pin_parameter_sets(model::ReactionSystem, samples::Int; parameter_limits=Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), "γ" => (1e2, 1e4), "κ" => (0.2, 1.0), "η" => (1.0, 5.0)), sampling_scales=Dict("α" => "log", "β" => "log", "γ" => "log", "κ" => "linear", "η" => "linear"), sampling_style="lhc")
+function pin_parameter_sets(model::ReactionSystem, samples::Int; dimensionless_time=true, parameter_limits=Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), "γ" => (1e2, 1e4), "κ" => (0.2, 1.0), "η" => (1.0, 5.0)), sampling_scales=Dict("α" => "log", "β" => "log", "γ" => "log", "κ" => "linear", "η" => "linear"), sampling_style="lhc")
     N, E = pin_nodes_edges(model)
 
     α_limits = [parameter_limits["α"] for i=1:N]
@@ -177,6 +178,11 @@ function pin_parameter_sets(model::ReactionSystem, samples::Int; parameter_limit
         γ = parameter_array[i][2*N+1:2*N+E]
         κ = parameter_array[i][2*N+E+1:2*N+2*E]
         η = parameter_array[i][2*N+2*E+1:2*N+3*E]
+
+        if dimensionless_time
+            α[1] = 1.0
+        end
+
         p = pin_parameters(model, α, β, γ, κ, η)
         push!(parameter_sets, p)
     end
@@ -309,7 +315,7 @@ function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; initi
     end
     # Equilibrate
     equilibration_data = equilibrate_ODEs(model, parameter_sets, initial_conditions, equilibration_times)
-    # Filter solutions with small velocity vector
+    # Filter out solutions with velocity vector smaller than the mean velocity obtained from the equilibration
     velocity = equilibration_data["final_velocity"]
     cutoff = 10 ^ mean(log10.(velocity))
     filter = velocity .> cutoff
