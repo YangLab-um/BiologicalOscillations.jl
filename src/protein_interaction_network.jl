@@ -106,7 +106,7 @@ function pin_parameters(model::ReactionSystem, α::AbstractVector, β::AbstractV
         @nonamespace push!(new_map_vals, (model.κ[j], κ[j]))
         @nonamespace push!(new_map_vals, (model.η[j], η[j]))
     end
-    # return ModelingToolkit.varmap_to_vars(Dict(new_map_vals), parameters(model))
+    
     return Dict(new_map_vals)
 end
 
