@@ -155,66 +155,62 @@ sampling_scales = Dict("α" => "log", "β" => "log", "γ" => "log", "κ" => "lin
 function pin_parameter_sets(model::ReactionSystem, samples::Int; dimensionless_time=true, parameter_limits=Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), "γ" => (1e2, 1e4), "κ" => (0.2, 1.0), "η" => (1.0, 5.0)), sampling_scales=Dict("α" => "log", "β" => "log", "γ" => "log", "κ" => "linear", "η" => "linear"), sampling_style="lhc")
     N, E = pin_nodes_edges(model)
 
-    α_limits = [parameter_limits["α"] for i=1:N]
-    β_limits = [parameter_limits["β"] for i=1:N]
-    γ_limits = [parameter_limits["γ"] for i=1:E]
-    κ_limits = [parameter_limits["κ"] for i=1:E]
-    η_limits = [parameter_limits["η"] for i=1:E]
-    parameter_limits = vcat(α_limits, β_limits, γ_limits, κ_limits, η_limits)
+    limits = []
+    for i=1:N
+        push!(limits, parameter_limits["α"])
+        push!(limits, parameter_limits["β"])
+    end
+    for i=1:E
+        push!(limits, parameter_limits["γ"])
+        push!(limits, parameter_limits["κ"])
+        push!(limits, parameter_limits["η"])
+    end
 
-    α_scales = [sampling_scales["α"] for i=1:N]
-    β_scales = [sampling_scales["β"] for i=1:N]
-    γ_scales = [sampling_scales["γ"] for i=1:E]
-    κ_scales = [sampling_scales["κ"] for i=1:E]
-    η_scales = [sampling_scales["η"] for i=1:E]
-    sampling_scales = vcat(α_scales, β_scales, γ_scales, κ_scales, η_scales)
+    scales = []
+    for i=1:N
+        push!(scales, sampling_scales["α"])
+        push!(scales, sampling_scales["β"])
+    end
+    for i=1:E
+        push!(scales, sampling_scales["γ"])
+        push!(scales, sampling_scales["κ"])
+        push!(scales, sampling_scales["η"])
+    end
 
-    parameter_array = generate_parameter_sets(samples, parameter_limits, sampling_scales)
+    parameter_array = generate_parameter_sets(samples, limits, scales)
 
-    parameter_sets = []
-    for i=1:samples
-        α = parameter_array[i][1:N]
-        β = parameter_array[i][N+1:2*N]
-        γ = parameter_array[i][2*N+1:2*N+E]
-        κ = parameter_array[i][2*N+E+1:2*N+2*E]
-        η = parameter_array[i][2*N+2*E+1:2*N+3*E]
-
-        if dimensionless_time
-            α[1] = 1.0
-        end
-
-        p = pin_parameters(model, α, β, γ, κ, η)
-        push!(parameter_sets, p)
+    if dimensionless_time
+        parameter_array[:,1] .= 1.0
     end
     
-    return parameter_sets
+    return parameter_array
 end
 
 
 """
-    pin_equilibration_times(model::ReactionSystem, parameter_sets::AbstractVector; equilibration_time_multiplier=10)
+    pin_equilibration_times(model::ReactionSystem, parameter_sets::AbstractArray; equilibration_time_multiplier=10)
 
 Calculates the equilibration times for each dataset
 
 # Arguments (Required)
 - `model::ReactionSystem`: Model generated with [`protein_interaction_network`](@ref)
-- `parameter_sets::AbstractVector`: Parameter sets generated with [`pin_parameter_sets`](@ref)
+- `parameter_sets::AbstractArray`: Parameter sets generated with [`pin_parameter_sets`](@ref)
 
 # Arguments (Optional)
 - `equilibration_time_multiplier::Real`: Factor by which the slowest timescale in the parameter set is multiplied by in order to calculate the final equilibration time
 
 # Returns
-- `equilibration_times::AbstractVector`: Array of equilibration times
+- `equilibration_times::Array{Float64}`: Array of equilibration times
 """
-function pin_equilibration_times(model::ReactionSystem, parameter_sets::AbstractVector; equilibration_time_multiplier=10)
+function pin_equilibration_times(model::ReactionSystem, parameter_sets::AbstractArray; equilibration_time_multiplier=10)
     N, E = pin_nodes_edges(model)
 
-    equilibration_times = []
+    equilibration_times = Array{Float64}(undef, 0)
     for i in axes(parameter_sets, 1)
-        p = parameter_sets[i]
-        @nonamespace α = [p[model.α[i]] for i=1:N]
-        @nonamespace β = [p[model.β[i]] for i=1:N]
-        @nonamespace γ = [p[model.γ[i]] for i=1:E]
+        p = parameter_sets[i, :]
+        α = p[1:2:2N]
+        β = p[2:2:2N]
+        γ = p[2N+1:3:2N+3E]
         
         timescale = pin_timescale(α, β, γ)
         push!(equilibration_times, timescale * equilibration_time_multiplier)
@@ -237,10 +233,10 @@ Calculates the simulation times for each parameter set
 - `simulation_time_multiplier::Real`: Factor by which the period (given by the estimated frequency from the equilibration) is multiplied by in order to calculate the final simulation time
 
 # Returns
-- `simulation_times::AbstractVector`: Array of simulation times
+- `simulation_times::Array{Float64}`: Array of simulation times
 """
 function pin_simulation_times(equilibration_data::Dict, equilibration_times::AbstractVector; simulation_time_multiplier=10)
-    simulation_times = []
+    simulation_times = Array{Float64}(undef, 0)
 
     for i in axes(equilibration_data["frequency"], 1)
         freq = equilibration_data["frequency"][i]
@@ -264,10 +260,10 @@ Calculates the oscillatory status for each parameter set using the functionality
 - `simulation_data::Dict`: Dictionary of simulation data generated with [`simulate_ODEs`](@ref)
 
 # Returns
-- `oscillatory_status::AbstractVector`: Boolean array of oscillatory status
+- `oscillatory_status::Array{Bool}`: Boolean array of oscillatory status
 """
 function pin_oscillatory_status(simulation_data::Dict)
-    oscillatory_status = []
+    oscillatory_status = Array{Bool}(undef, 0)
 
     for i in axes(simulation_data["frequency_data"], 1)
         freq = simulation_data["frequency_data"][i]
@@ -296,13 +292,18 @@ Finds oscillatory parameter sets in a protein interaction network
 - `pin_result::Dict`: A ditionary containing the results of the oscillatory parameter set search. Output is encoded as:
 ```julia
 pin_result = Dict('model' => "Model generated with protein_interaction_network()",
-                  'parameter_sets' => "Parameter sets used for simulation",
+                  'parameter_sets' => "Parameter sets generated with pin_parameter_sets()",
                   'equilibration_times' => "Equilibration times used for simulation",
                   'equilibration_data => "Result from equilibrate_ODEs()", 
-                  'velocity_cutoff' => "Cutoff used to filter equilibrated solutions",
+                  'equilibration_filter' => "Boolean array of equilibration result for each parameter set",
                   'simulation_times' => "Simulation times used for simulation",
-                  'simulation_data' => "Result from simulate_ODEs() on potential oscillatory solutions",
-                  'oscilatory_status' => "Boolean array of oscilatory status for each parameter set that passed the equilibration filter")
+                  'oscilatory_status' => "Boolean array of oscilatory status for each parameter set that passed the equilibration filter",
+                  'oscillatory_solutions' => "ODESolutions for those parameter sets that passed the equilibration filter and were found to be oscillatory",
+                  'oscillatory_frequency_data' => "Frequency data for those parameter sets that passed the equilibration filter and were found to be oscillatory",
+                  'oscillatory_amplitude_data' => "Amplitude data for those parameter sets that passed the equilibration filter and were found to be oscillatory",
+                  'non_oscillatory_time_series' => "Time series for those parameter sets that passed the equilibration filter and were found to be non-oscillatory",
+                  'non_oscillatory_frequency_data' => "Frequency data for those parameter sets that passed the equilibration filter and were found to be non-oscillatory",
+                  'non_oscillatory_amplitude_data' => "Amplitude data for those parameter sets that passed the equilibration filter and were found to be non-oscillatory")
 ```
 """
 function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; initial_conditions=NaN)
@@ -321,19 +322,33 @@ function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; initi
     filter = velocity .> cutoff
     simulation_times = pin_simulation_times(equilibration_data, equilibration_times)
     # Simulate
-    simulation_data = simulate_ODEs(model, parameter_sets[filter], equilibration_data["final_state"][filter], simulation_times[filter])
+    simulation_data = simulate_ODEs(model, parameter_sets[filter,:], equilibration_data["final_state"][filter], simulation_times[filter])
     # Check for oscillations
     oscillatory_status = pin_oscillatory_status(simulation_data)
     # Return results
+    non_oscillatory_time_series = []
+    for (i, status) in enumerate(oscillatory_status)
+        if !status
+            sol = simulation_data["solution"][i]
+            u = mapreduce(permutedims, vcat, sol.u)
+            push!(non_oscillatory_time_series, hcat(sol.t, u))
+        end
+    end
+
     pin_result = Dict("model" => model,
                       "parameter_sets" => parameter_sets,
                       "equilibration_times" => equilibration_times,
                       "equilibration_data" => equilibration_data,
-                      "velocity_cutoff" => cutoff,
+                      "equilibration_filter" => filter,
                       "simulation_times" => simulation_times,
-                      "simulation_data" => simulation_data,
-                      "oscillatory_status" => oscillatory_status)
-    
+                      "oscillatory_status" => oscillatory_status,
+                      "oscillatory_solutions" => simulation_data["solution"][oscillatory_status],
+                      "oscillatory_frequency_data" => simulation_data["frequency_data"][oscillatory_status],
+                      "oscillatory_amplitude_data" => simulation_data["amplitude_data"][oscillatory_status],
+                      "non_oscillatory_time_series" => non_oscillatory_time_series,
+                      "non_oscillatory_frequency_data" => simulation_data["frequency_data"][.!oscillatory_status],
+                      "non_oscillatory_amplitude_data" => simulation_data["amplitude_data"][.!oscillatory_status])
+
     return pin_result
 end
 

@@ -1,5 +1,5 @@
 """
-    generate_parameter_sets(samples::Int, parameter_limits::AbstractVector, sampling_scales::AbstractVector, sampling_style="lhc")
+    generate_parameter_sets(samples::Int, parameter_limits::AbstractVector, sampling_scales::AbstractVector, sampling_style::String="lhc")
 
 Creates an array of parameter sets within the limits provided in `parameter_limits` using either Latin Hypercube Sampling or Random Sampling. Each parameter can be sampled linearly or logarithmically.
 
@@ -12,9 +12,9 @@ Creates an array of parameter sets within the limits provided in `parameter_limi
 - `sampling_style::String`: Sampling style of the algorithm. Accepted strings are "lhc" and "random".
 
 # Returns
-- `parameter_sets::AbstractVector`: Array of parameter sets of length `samples`.
+- `parameter_sets::AbstractArray`: Array of parameter sets of length `samples`.
 """
-function generate_parameter_sets(samples::Int, parameter_limits::AbstractVector, sampling_scales::AbstractVector; sampling_style="lhc")
+function generate_parameter_sets(samples::Int, parameter_limits::AbstractVector, sampling_scales::AbstractVector; sampling_style::String="lhc")
     number_of_parameters = length(parameter_limits)
     # Draw sample
     if lowercase(sampling_style) == "lhc"
@@ -33,29 +33,26 @@ function generate_parameter_sets(samples::Int, parameter_limits::AbstractVector,
         end
     end
 
-    LHC = scaleLHC(LHCplan, scaling_plan)
+    parameter_sets = scaleLHC(LHCplan, scaling_plan)
 
     for (idx, scale) in enumerate(sampling_scales)
         if scale == "log"
-            LHC[:,idx] = 10 .^ LHC[:,idx]
+            parameter_sets[:,idx] = 10 .^ parameter_sets[:,idx]
         end
     end
-
-    # Format output as a vector of vectors
-    parameter_sets = [LHC[i,:] for i=axes(LHC,1)]
     
     return parameter_sets
 end
 
 
 """
-    equilibrate_ODEs(model::ReactionSystem, parameter_sets::AbstractVector, initial_conditions::AbstractVector, equilibration_times::AbstractVector, solver=RadauIIA5(), abstol=1e-7, reltol=1e-4, maxiters=1e7)
+    equilibrate_ODEs(model::ReactionSystem, parameter_sets::AbstractArray, initial_conditions::AbstractVector, equilibration_times::AbstractVector, solver=RadauIIA5(), abstol::Real=1e-7, reltol::Real=1e-4, maxiters=1e7)
 
 Simulates a `model` for the different `parameter_sets` until the predetermined `equilibration_times` are reached.
 
 # Arguments (Required)
 - `model::ReactionSystem`: A set of differential equations encoded as a reaction ReactionSystem
-- `parameter_sets::AbstracVector`: Vector with each element defining the parameter set for each simulation
+- `parameter_sets::AbstractArray`: Array where each row defines the parameter set for each simulation
 - `initial_conditions::AbstractVector`: Vector with each element defining the initial condition for each parameter set
 - `equilibration_times::AbstractVector`: Vector of simulation times
 
@@ -73,31 +70,26 @@ equilibration_data = Dict('final_state' => [[final_state_pset1_var1, ..., final_
                           'frequency' => [frequency_pset1, ..., frequency_psetM])
 ```
 """
-function equilibrate_ODEs(model::ReactionSystem, parameter_sets::AbstractVector, initial_conditions::AbstractVector, equilibration_times::AbstractVector; solver=RadauIIA5(), abstol=1e-7, reltol=1e-4, maxiters=1e7)
+function equilibrate_ODEs(model::ReactionSystem, parameter_sets::AbstractArray, initial_conditions::AbstractVector, equilibration_times::AbstractVector; solver=RadauIIA5(), abstol::Real=1e-7, reltol::Real=1e-4, maxiters=1e7)
     number_of_psets = size(parameter_sets, 1)
     # Define problem and output functions for EnsembleProblem
     function prob_function(prob::ODEProblem, i, ~)
         idx = Int(i)
-        remake(prob, u0=initial_conditions[idx], tspan=(0.0, equilibration_times[idx]), p=parameter_sets[idx])
+        remake(prob, u0=initial_conditions[idx], tspan=(0.0, equilibration_times[idx]), p=parameter_sets[idx,:])
     end
 
     function output_func(sol::ODESolution, i)
         idx = Int(i)
-        ode_problem = ODEProblem(model, initial_conditions[idx], (0.0, equilibration_times[idx]), parameter_sets[idx])
+        ode_problem = ODEProblem(model, initial_conditions[idx], (0.0, equilibration_times[idx]), parameter_sets[idx,:])
         frequency_data = calculate_main_frequency(sol, length(sol.t), length(sol.t))
         mean_frequency = mean(frequency_data["frequency"])
         final_state = sol.u[end]
-        if typeof(parameter_sets[idx]) == Dict{Num, Float64}
-            parameter_array = ModelingToolkit.varmap_to_vars(parameter_sets[idx], parameters(model))
-        else
-            parameter_array = parameter_sets[idx]
-        end
-        final_derivative = ode_problem.f(final_state, parameter_array, equilibration_times[idx])
+        final_derivative = ode_problem.f(final_state, parameter_sets[idx,:], equilibration_times[idx])
         final_velocity = sqrt(sum(final_derivative.^2))
         return ([final_state, final_velocity, mean_frequency], false)
     end
 
-    ode_problem = ODEProblem(model, initial_conditions[1], (0.0, equilibration_times[1]), parameter_sets[1])
+    ode_problem = ODEProblem(model, initial_conditions[1], (0.0, equilibration_times[1]), parameter_sets[1,:])
     ensemble_problem = EnsembleProblem(ode_problem, prob_func=prob_function, safetycopy=false, output_func=output_func)
     simulation = solve(ensemble_problem, solver, EnsembleThreads(), trajectories=number_of_psets,
                        abstol=abstol, reltol=reltol, maxiters=maxiters, dense=true)
@@ -117,7 +109,7 @@ Simulates a `model` for the different `parameter_sets` until the predetermined `
 
 # Arguments (Required)
 - `model::ReactionSystem`: A set of differential equations encoded as a reaction ReactionSystem
-- `parameter_sets::AbstracVector`: Vector with each element defining the parameter set for each simulation
+- `parameter_sets::AbstractArray`: Array where each row defines the parameter set for each simulation
 - `initial_conditions::AbstractVector`: Vector with each element defining the initial condition for each parameter set
 - `simulation_times::AbstractVector`: Vector of simulation times
 
@@ -139,12 +131,12 @@ simulation_data = Dict('solution => [solution_pset1, ..., solution_psetM],
 # Note
 - It is important that the parameter sets and initial conditions given to this function to be pre-equilibrated. Use [`equilibrate_ODEs`](@ref) for this purpose.
 """
-function simulate_ODEs(model::ReactionSystem, parameter_sets::AbstractVector, initial_conditions::AbstractVector, simulation_times::AbstractVector; solver=RadauIIA5(), abstol=1e-7, reltol=1e-4, maxiters=1e7, fft_multiplier=100)
+function simulate_ODEs(model::ReactionSystem, parameter_sets::AbstractArray, initial_conditions::AbstractVector, simulation_times::AbstractVector; solver=RadauIIA5(), abstol=1e-7, reltol=1e-4, maxiters=1e7, fft_multiplier=100)
     number_of_psets = size(parameter_sets, 1)
     # Define problem and output functions for EnsembleProblem
     function prob_function(prob::ODEProblem, i, ~)
         idx = Int(i)
-        remake(prob, u0=initial_conditions[idx], tspan=(0.0, simulation_times[idx]), p=parameter_sets[idx])
+        remake(prob, u0=initial_conditions[idx], tspan=(0.0, simulation_times[idx]), p=parameter_sets[idx,:])
     end
 
     function output_func(sol::ODESolution, i)
@@ -153,7 +145,7 @@ function simulate_ODEs(model::ReactionSystem, parameter_sets::AbstractVector, in
         return ([sol, frequency_data, amplitude_data], false)
     end
 
-    ode_problem = ODEProblem(model, initial_conditions[1], (0.0, simulation_times[1]), parameter_sets[1])
+    ode_problem = ODEProblem(model, initial_conditions[1], (0.0, simulation_times[1]), parameter_sets[1,:])
     ensemble_problem = EnsembleProblem(ode_problem, prob_func=prob_function, safetycopy=false, output_func=output_func)
     simulation = solve(ensemble_problem, solver, EnsembleThreads(), trajectories=number_of_psets,
                        abstol=abstol, reltol=reltol, maxiters=maxiters, dense=true)
