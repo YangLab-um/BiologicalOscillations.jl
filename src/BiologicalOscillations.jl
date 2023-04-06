@@ -1,7 +1,7 @@
 module BiologicalOscillations
 
 using Catalyst, DifferentialEquations, ModelingToolkit, Latexify
-using Statistics, DSP, Peaks, LatinHypercubeSampling
+using Statistics, DSP, Peaks, LatinHypercubeSampling, DataFrames
 
 export elowitz_2000
 export generate_parameter_sets, equilibrate_ODEs, simulate_ODEs

@@ -291,20 +291,16 @@ Finds oscillatory parameter sets in a protein interaction network
 # Returns
 - `pin_result::Dict`: A ditionary containing the results of the oscillatory parameter set search. Output is encoded as:
 ```julia
-pin_result = Dict('model' => "Model generated with protein_interaction_network()",
-                  'parameter_sets' => "Parameter sets generated with pin_parameter_sets()",
-                  'equilibration_times' => "Equilibration times used for simulation",
-                  'equilibration_data => "Result from equilibrate_ODEs()", 
-                  'equilibration_filter' => "Boolean array of equilibration result for each parameter set",
-                  'simulation_times' => "Simulation times used for simulation",
-                  'oscilatory_status' => "Boolean array of oscilatory status for each parameter set that passed the equilibration filter",
-                  'oscillatory_solutions' => "ODESolutions for those parameter sets that passed the equilibration filter and were found to be oscillatory",
-                  'oscillatory_frequency_data' => "Frequency data for those parameter sets that passed the equilibration filter and were found to be oscillatory",
-                  'oscillatory_amplitude_data' => "Amplitude data for those parameter sets that passed the equilibration filter and were found to be oscillatory",
-                  'non_oscillatory_time_series' => "Time series for those parameter sets that passed the equilibration filter and were found to be non-oscillatory",
-                  'non_oscillatory_frequency_data' => "Frequency data for those parameter sets that passed the equilibration filter and were found to be non-oscillatory",
-                  'non_oscillatory_amplitude_data' => "Amplitude data for those parameter sets that passed the equilibration filter and were found to be non-oscillatory")
+pin_result = Dict("model" => "ReactionSystem of the protein interaction network",
+                  "parameter_sets" => "Dataframe of parameter sets",
+                  "equilibration_result" => "Dataframe containing result metrics for the equilibration of parameter sets",
+                  "simulation_result" => "Dataframe containing result metrics for the simulated parameter sets",
+                  "non_oscillatory_time_series" => "Dictionary with parameter indexes as keys and TimeSeries as values",
+                  "oscillatory_ode_solutions" => "Dictionary with parameter indexes as keys and ODESolutions as values",)
 ```
+
+# Notes
+- Non oscillatory time series are encoded as a matrix where the first column corresponds to time and the rest correspond to the values of each variable
 """
 function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; initial_conditions=NaN)
     model = protein_interaction_network(connectivity)
@@ -325,29 +321,71 @@ function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; initi
     simulation_data = simulate_ODEs(model, parameter_sets[filter,:], equilibration_data["final_state"][filter], simulation_times[filter])
     # Check for oscillations
     oscillatory_status = pin_oscillatory_status(simulation_data)
-    # Return results
-    non_oscillatory_time_series = []
+
+    # Create a dataframe with the parameter sets
+    parameter_map = paramsmap(model)
+    parameter_names = Array{String}(undef, length(parameter_map))
+    for (k, v) in parameter_map
+        parameter_names[v] = string(k)
+    end
+
+    # Create a dataframe with the equilibration result
+    equilibration_result = Dict(
+        "parameter_index" => collect(1:1:samples),
+        "equilibration_times" => equilibration_times,
+        "final_velocity" => equilibration_data["final_velocity"],
+        "frequency" => equilibration_data["frequency"],
+        "is_steady_state" => .!filter,)
+    final_state = mapreduce(permutedims, vcat, equilibration_data["final_state"])
+    for n=1:nodes
+        push!(equilibration_result, ("final_state_$(n)" => final_state[:,n]))
+    end
+
+    # Create a dataframe with the simulation result
+    simulation_result = Dict(
+        "parameter_index" => collect(1:1:samples)[filter],
+        "simulation_times" => simulation_times[filter],
+        "is_oscillatory" => oscillatory_status,)
+    for n=1:nodes
+        frequency = Array{Float64}(undef, 0)
+        power = Array{Float64}(undef, 0)
+        amplitude = Array{Float64}(undef, 0)
+        peak_variation = Array{Float64}(undef, 0)
+        trough_variation = Array{Float64}(undef, 0)
+        for i=1:sum(filter)
+            push!(frequency, simulation_data["frequency_data"][i]["frequency"][n])
+            push!(power, simulation_data["frequency_data"][i]["power"][n])
+            push!(amplitude, simulation_data["amplitude_data"][i]["amplitude"][n])
+            push!(peak_variation, simulation_data["amplitude_data"][i]["peak_variation"][n])
+            push!(trough_variation, simulation_data["amplitude_data"][i]["trough_variation"][n])
+        end
+        simulation_result["frequency_$(n)"] = frequency
+        simulation_result["fft_power_$(n)"] = power
+        simulation_result["amplitude_$(n)"] = amplitude
+        simulation_result["peak_variation_$(n)"] = peak_variation
+        simulation_result["trough_variation_$(n)"] = trough_variation
+    end
+
+    # Return the ODE solutions. For oscillatory solutions return the full ODESolution and for non oscillatory solutions return only the time series
+    non_oscillatory_time_series = Dict()
+    oscillatory_ode_solutions = Dict()
     for (i, status) in enumerate(oscillatory_status)
-        if !status
+        parameter_index = collect(1:1:samples)[filter][i]
+        if status
+            oscillatory_ode_solutions[parameter_index] = simulation_data["solution"][i]
+        else
             sol = simulation_data["solution"][i]
             u = mapreduce(permutedims, vcat, sol.u)
-            push!(non_oscillatory_time_series, hcat(sol.t, u))
+            non_oscillatory_time_series[parameter_index] = hcat(sol.t, u)
         end
     end
 
     pin_result = Dict("model" => model,
-                      "parameter_sets" => parameter_sets,
-                      "equilibration_times" => equilibration_times,
-                      "equilibration_data" => equilibration_data,
-                      "equilibration_filter" => filter,
-                      "simulation_times" => simulation_times,
-                      "oscillatory_status" => oscillatory_status,
-                      "oscillatory_solutions" => simulation_data["solution"][oscillatory_status],
-                      "oscillatory_frequency_data" => simulation_data["frequency_data"][oscillatory_status],
-                      "oscillatory_amplitude_data" => simulation_data["amplitude_data"][oscillatory_status],
+                      "parameter_sets" => DataFrame(parameter_sets, parameter_names),
+                      "equilibration_result" => DataFrame(equilibration_result),
+                      "simulation_result" => DataFrame(simulation_result),
                       "non_oscillatory_time_series" => non_oscillatory_time_series,
-                      "non_oscillatory_frequency_data" => simulation_data["frequency_data"][.!oscillatory_status],
-                      "non_oscillatory_amplitude_data" => simulation_data["amplitude_data"][.!oscillatory_status])
+                      "oscillatory_ode_solutions" => oscillatory_ode_solutions,)
 
     return pin_result
 end
@@ -372,7 +410,7 @@ Estimates the hit rate of the oscillatory parameter set search in a protein inte
 """
 function pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target_oscillations::Int=100, max_samples::Int=1000000, max_trials::Int=5)
     pin_result = find_pin_oscillations(connectivity, initial_samples)
-    oscillatory = sum(pin_result["oscillatory_status"])
+    oscillatory = sum(pin_result["simulation_result"][!,"is_oscillatory"])
     println("Oscillatory: $oscillatory, Samples $initial_samples")
     hit_rate =  oscillatory / initial_samples
 
@@ -388,7 +426,7 @@ function pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target
                 samples = ceil(Int, samples * (target_oscillations + 10) / oscillatory)
             end
             pin_result = find_pin_oscillations(connectivity, samples)
-            oscillatory = sum(pin_result["oscillatory_status"])
+            oscillatory = sum(pin_result["simulation_result"][!,"is_oscillatory"])
             println("Oscillatory: $oscillatory, Samples $samples")
             hit_rate = oscillatory / samples
             trial += 1
