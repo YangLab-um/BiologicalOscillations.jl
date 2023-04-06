@@ -123,7 +123,7 @@ Simulates a `model` for the different `parameter_sets` until the predetermined `
 # Returns
 - simulation_data::Dict: Dictionary containing the ODESolution, frequency data, and amplitude data for each parameter set. Frequency data is the output of [`calculate_main_frequency`](@ref) and amplitude data the output of [`calculate_amplitude`](@ref). The final output is encoded as:
 ```julia
-simulation_data = Dict('solution => [solution_pset1, ..., solution_psetM], 
+simulation_data = Dict('final_state' => [final_state_pset1, ..., final_state_psetM], 
                        'frequency_data' => [freq_data_pset1, ..., freq_data_psetM],
                        'amplitude_data' => [amp_data_pset1, ..., amp_data_psetM])
 ```
@@ -142,7 +142,7 @@ function simulate_ODEs(model::ReactionSystem, parameter_sets::AbstractArray, ini
     function output_func(sol::ODESolution, i)
         frequency_data = calculate_main_frequency(sol, length(sol.t), fft_multiplier * length(sol.t))
         amplitude_data = calculate_amplitude(sol)
-        return ([sol, frequency_data, amplitude_data], false)
+        return ([sol.u[end], frequency_data, amplitude_data], false)
     end
 
     ode_problem = ODEProblem(model, initial_conditions[1], (0.0, simulation_times[1]), parameter_sets[1,:])
@@ -150,7 +150,7 @@ function simulate_ODEs(model::ReactionSystem, parameter_sets::AbstractArray, ini
     simulation = solve(ensemble_problem, solver, EnsembleThreads(), trajectories=number_of_psets,
                        abstol=abstol, reltol=reltol, maxiters=maxiters, dense=true)
     
-    simulation_data = Dict("solution" => [simulation.u[i][1] for i=axes(simulation.u, 1)],
+    simulation_data = Dict("final_state" => [simulation.u[i][1] for i=axes(simulation.u, 1)],
                            "frequency_data" => [simulation.u[i][2] for i=axes(simulation.u, 1)],
                            "amplitude_data" => [simulation.u[i][3] for i=axes(simulation.u, 1)])
 

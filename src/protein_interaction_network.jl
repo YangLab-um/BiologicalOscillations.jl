@@ -338,7 +338,7 @@ function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; initi
         "is_steady_state" => .!filter,)
     final_state = mapreduce(permutedims, vcat, equilibration_data["final_state"])
     for n=1:nodes
-        push!(equilibration_result, ("final_state_$(n)" => final_state[:,n]))
+        equilibration_result["final_state_$(n)"] = final_state[:,n]
     end
 
     # Create a dataframe with the simulation result
@@ -346,6 +346,7 @@ function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; initi
         "parameter_index" => collect(1:1:samples)[filter],
         "simulation_times" => simulation_times[filter],
         "is_oscillatory" => oscillatory_status,)
+    final_state = mapreduce(permutedims, vcat, simulation_data["final_state"])
     for n=1:nodes
         frequency = Array{Float64}(undef, 0)
         power = Array{Float64}(undef, 0)
@@ -359,6 +360,7 @@ function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; initi
             push!(peak_variation, simulation_data["amplitude_data"][i]["peak_variation"][n])
             push!(trough_variation, simulation_data["amplitude_data"][i]["trough_variation"][n])
         end
+        simulation_result["final_state_$(n)"] = final_state[:,n]
         simulation_result["frequency_$(n)"] = frequency
         simulation_result["fft_power_$(n)"] = power
         simulation_result["amplitude_$(n)"] = amplitude
@@ -366,26 +368,10 @@ function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; initi
         simulation_result["trough_variation_$(n)"] = trough_variation
     end
 
-    # Return the ODE solutions. For oscillatory solutions return the full ODESolution and for non oscillatory solutions return only the time series
-    non_oscillatory_time_series = Dict()
-    oscillatory_ode_solutions = Dict()
-    for (i, status) in enumerate(oscillatory_status)
-        parameter_index = collect(1:1:samples)[filter][i]
-        if status
-            oscillatory_ode_solutions[parameter_index] = simulation_data["solution"][i]
-        else
-            sol = simulation_data["solution"][i]
-            u = mapreduce(permutedims, vcat, sol.u)
-            non_oscillatory_time_series[parameter_index] = hcat(sol.t, u)
-        end
-    end
-
     pin_result = Dict("model" => model,
                       "parameter_sets" => DataFrame(parameter_sets, parameter_names),
                       "equilibration_result" => DataFrame(equilibration_result),
-                      "simulation_result" => DataFrame(simulation_result),
-                      "non_oscillatory_time_series" => non_oscillatory_time_series,
-                      "oscillatory_ode_solutions" => oscillatory_ode_solutions,)
+                      "simulation_result" => DataFrame(simulation_result),)
 
     return pin_result
 end
