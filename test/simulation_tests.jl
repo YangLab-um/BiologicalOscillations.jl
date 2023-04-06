@@ -3,13 +3,8 @@ using BiologicalOscillations, Catalyst, ModelingToolkit, DifferentialEquations, 
 connectivity = [0 0 1; 1 0 0; 0 -1 0]
 model = protein_interaction_network(connectivity)
 
-α = [1.0, 0.13, 2.3]
-β = [44.3, 75.3, 0.10]
-γ = [2472.4, 442.2, 4410.0]
-κ = [0.27, 0.91, 0.29]
-η = [3.0, 4.8, 3.3]
-
-parameter_sets = [pin_parameters(model, α, β, γ, κ, η) for i=1:3]
+parameter_values = [1.0, 44.3, 0.13, 75.3, 2.3, 0.10, 2472.4, 0.27, 3.0, 442.2, 0.91, 4.8, 4410.0, 0.29, 3.3]
+parameter_sets = transpose(repeat(parameter_values, 1, 3))
 initial_conditions = [0.5*ones(3) for i=1:3]
 equilibration_times = [pin_timescale(α, β, γ) for i=1:3]
 
