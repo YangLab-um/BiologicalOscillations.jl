@@ -294,9 +294,7 @@ Finds oscillatory parameter sets in a protein interaction network
 pin_result = Dict("model" => "ReactionSystem of the protein interaction network",
                   "parameter_sets" => "Dataframe of parameter sets",
                   "equilibration_result" => "Dataframe containing result metrics for the equilibration of parameter sets",
-                  "simulation_result" => "Dataframe containing result metrics for the simulated parameter sets",
-                  "non_oscillatory_time_series" => "Dictionary with parameter indexes as keys and TimeSeries as values",
-                  "oscillatory_ode_solutions" => "Dictionary with parameter indexes as keys and ODESolutions as values",)
+                  "simulation_result" => "Dataframe containing result metrics for the simulated parameter sets",)
 ```
 
 # Notes
