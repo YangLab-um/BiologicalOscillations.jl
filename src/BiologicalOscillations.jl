@@ -4,14 +4,21 @@ using Catalyst, DifferentialEquations, ModelingToolkit, Latexify
 using Statistics, DSP, Peaks, LatinHypercubeSampling, DataFrames
 using Combinatorics
 
-export elowitz_2000
+# Models
+export elowitz_2000, guan_2008
+# Simulation
 export generate_parameter_sets, equilibrate_ODEs, simulate_ODEs
+# Feature calculation
 export calculate_main_frequency, calculate_amplitude, is_ODE_oscillatory
+# Protein interaction network
 export protein_interaction_network, pin_parameters, pin_timescale, pin_parameter_sets
 export pin_equilibration_times, pin_simulation_times, pin_oscillatory_status, find_pin_oscillations
 export pin_hit_rate
+# Gene regulatory network
 export gene_regulatory_network, grn_parameters, grn_timescale, grn_parameter_sets
 export grn_equilibration_times, grn_simulation_times, grn_oscillatory_status, find_grn_oscillations
+# Network utilities
+export network_permutations
 
 include("models.jl")
 include("simulation.jl")
