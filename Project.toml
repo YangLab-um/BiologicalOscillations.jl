@@ -1,7 +1,7 @@
 name = "BiologicalOscillations"
 uuid = "127c734c-d51c-490b-a01e-6a0ce858f88d"
 authors = ["Franco Tavella"]
-version = "0.0.1"
+version = "0.0.2"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
