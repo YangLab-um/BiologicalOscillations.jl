@@ -159,59 +159,56 @@ sampling_scales = Dict("α" => "log", "β" => "log", "δ" => "log", "γ" => "log
 ```
 - `sampling_style::String="lhc"`: Sampling style. Options are "lhc" for latin hypercube sampling and "random" for random sampling.
 """
-function grn_parameter_sets(model::ReactionSystem, samples::Int; dimensionless_time=true, parameter_limits=Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), "δ" => (1e-2, 1e2), "γ" => (1e2, 1e4), "κ" => (0.2, 1.0), "η" => (1.0, 5.0)), sampling_scales=Dict("α" => "log", "β" => "log", "δ" => "log", "γ" => "log", "κ" => "linear", "η" => "linear"), sampling_style="lhc")
+function grn_parameter_sets(model::ReactionSystem, samples::Int; dimensionless_time=true, parameter_limits=Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), "δ" => (1e-2, 1e2), "γ" => (1e-2, 1e2), "κ" => (0.2, 1.0), "η" => (1.0, 5.0)), sampling_scales=Dict("α" => "log", "β" => "log", "δ" => "log", "γ" => "log", "κ" => "linear", "η" => "linear"), sampling_style="lhc")
     N, E = grn_nodes_edges(model)
 
-    α_limits = [parameter_limits["α"] for i=1:N]
-    β_limits = [parameter_limits["β"] for i=1:N]
-    δ_limits = [parameter_limits["δ"] for i=1:N]
-    γ_limits = [parameter_limits["γ"] for i=1:E]
-    κ_limits = [parameter_limits["κ"] for i=1:E]
-    η_limits = [parameter_limits["η"] for i=1:E]
-    parameter_limits = vcat(α_limits, β_limits, δ_limits, γ_limits, κ_limits, η_limits)
-
-    α_scales = [sampling_scales["α"] for i=1:N]
-    β_scales = [sampling_scales["β"] for i=1:N]
-    δ_scales = [sampling_scales["δ"] for i=1:N]
-    γ_scales = [sampling_scales["γ"] for i=1:E]
-    κ_scales = [sampling_scales["κ"] for i=1:E]
-    η_scales = [sampling_scales["η"] for i=1:E]
-    sampling_scales = vcat(α_scales, β_scales, δ_scales, γ_scales, κ_scales, η_scales)
-
-    parameter_array = generate_parameter_sets(samples, parameter_limits, sampling_scales)
-
-    parameter_sets = []
-    for i=1:samples
-        α = parameter_array[i][1:N]
-        β = parameter_array[i][N+1:2*N]
-        δ = parameter_array[i][2*N+1:3*N]
-        γ = parameter_array[i][3*N+1:3*N+E]
-        κ = parameter_array[i][3*N+E+1:3*N+2*E]
-        η = parameter_array[i][3*N+2*E+1:3*N+3*E]
-
-        if dimensionless_time
-            α[1] = 1.0
-            for j in 1:N
-                κ[j] = 1.0
-            end
-        end
-
-        p = grn_parameter_set(model, α, β, δ, γ, κ, η)
-        push!(parameter_sets, p)
+    limits = []
+    for i=1:N
+        push!(limits, parameter_limits["α"])
+        push!(limits, parameter_limits["β"])
+        push!(limits, parameter_limits["δ"])
+    end
+    for i=1:E
+        push!(limits, parameter_limits["γ"])
+        push!(limits, parameter_limits["κ"])
+        push!(limits, parameter_limits["η"])
     end
 
-    return parameter_sets
+    scales = []
+    for i=1:N
+        push!(scales, sampling_scales["α"])
+        push!(scales, sampling_scales["β"])
+        push!(scales, sampling_scales["δ"])
+    end
+    for i=1:E
+        push!(scales, sampling_scales["γ"])
+        push!(scales, sampling_scales["κ"])
+        push!(scales, sampling_scales["η"])
+    end
+
+    parameter_array = generate_parameter_sets(samples, limits, scales; sampling_style=sampling_style)
+
+    if dimensionless_time
+        # α₁ = 1.0
+        parameter_array[:,1] .= 1.0
+        # κ₁ = κ₂ = ... = κₙ = 1.0
+        for i=1:N
+            parameter_array[:,3*N+1+3*i-2] .= 1.0
+        end
+    end
+    
+    return parameter_array
 end
 
 
 """
-    grn_equilibration_times(model::ReactionSystem, parameter_sets::Dict; equilibration_time_multiplier=10)
+    grn_equilibration_times(model::ReactionSystem, parameter_sets::AbstractArray; equilibration_time_multiplier=10)
 
 Calculate the equilibration times for a group of parameter sets.
 
 # Arguments (Required)
 - `model::ReactionSystem`: Model generated with [`gene_regulatory_network`](@ref)
-- `parameter_sets::Dict`: Parameter sets generated with [`grn_parameter_sets`](@ref)
+- `parameter_sets::AbstractArray`: Parameter sets generated with [`grn_parameter_sets`](@ref)
 
 # Arguments (Optional)
 - `equilibration_time_multiplier::Real=10`: Multiplier for the equilibration time. The equilibration time is calculated as the timescale of the system multiplied by this value.
@@ -219,16 +216,171 @@ Calculate the equilibration times for a group of parameter sets.
 # Returns
 - `equilibration_times::AbstractVector`: Equilibration times for each parameter set.
 """
-function grn_equilibration_times(model::ReactionSystem, parameter_sets::Dict; equilibration_time_multiplier=10)
-    N, ~ = grn_nodes_edges(model)
+function grn_equilibration_times(model::ReactionSystem, parameter_sets::AbstractArray; equilibration_time_multiplier=10)
+    N, E = grn_nodes_edges(model)
 
-    equilibration_times = []
+    equilibration_times = Array{Float64}(undef, 0)
     for i in axes(parameter_sets, 1)
-        p = parameter_sets[i]
-        @nonamespace α = [p[model.α[i]] for i=1:N]
-        @nonamespace δ = [p[model.δ[i]] for i=1:N]
-        
+        p = parameter_sets[i, :]
+        α = p[1:3:3*N]
+        δ = p[3:3:3*N]
         timescale = grn_timescale(α, δ)
         push!(equilibration_times, timescale * equilibration_time_multiplier)
     end
+
+    return equilibration_times
 end
+
+
+"""
+    grn_simulation_times(equilibration_data::Dict, equilibration_times::AbstractVector; simulation_time_multiplier=10)
+
+Calculate the simulation times for a group of parameter sets in a gene regulatory network.
+
+# Arguments (Required)
+- `equilibration_data::Dict`: Equilibration data generated with [`grn_equilibration_data`](@ref)
+- `equilibration_times::AbstractVector`: Equilibration times generated with [`grn_equilibration_times`](@ref)
+
+# Arguments (Optional)
+- `simulation_time_multiplier::Real=10`: Multiplier for the simulation time. The simulation time is calculated as the equilibration period multiplied by this value.
+
+# Returns
+- `simulation_times::AbstractVector`: Simulation times for each parameter set.
+"""
+function grn_simulation_times(equilibration_data::Dict, equilibration_times::AbstractVector; simulation_time_multiplier=10)
+    simulation_times = Array{Float64}(undef, 0)
+
+    for i in axes(equilibration_data["frequency"], 1)
+        freq = equilibration_data["frequency"][i]
+        if isnan(freq)
+            push!(simulation_times, equilibration_times[i])
+        else
+            push!(simulation_times, simulation_time_multiplier / freq )
+        end
+    end
+
+    return simulation_times
+end
+
+
+"""
+    grn_oscillatory_status(simulation_data::Dict)
+
+Determines the oscillatory status of a group of parameter sets in a gene regulatory network.
+
+# Arguments (Required)
+- `simulation_data::Dict`: Simulation data generated with [`simulate_ODEs`](@ref)
+
+# Returns
+- `oscillatory_status::Array{Bool}`: Boolean array indicating whether each parameter set is oscillatory or not.
+"""
+function grn_oscillatory_status(simulation_data::Dict)
+    oscillatory_status = Array{Bool}(undef, 0)
+
+    for i in axes(simulation_data["frequency_data"], 1)
+        freq = simulation_data["frequency_data"][i]
+        amp = simulation_data["amplitude_data"][i]
+        decision = is_ODE_oscillatory(freq, amp)
+        push!(oscillatory_status, decision)
+    end
+
+    return oscillatory_status
+end
+
+
+"""
+    find_grn_oscillations(connectivity::AbstractMatrix, samples::Int; initial_conditions::AbstractVector=NaN)
+
+Find oscillatory parameter sets in a gene regulatory network.
+
+# Arguments (Required)
+- `connectivity::AbstractMatrix`: Connectivity matrix for the gene regulatory network
+- `samples::Int`: Number of parameter sets to test
+
+# Arguments (Optional)
+- `initial_conditions::AbstractVector=NaN`: Initial conditions for the ODEs. If not provided, the initial conditions are set to 0.5 for all variables.
+
+# Returns
+- `pin_result::Dict`: A ditionary containing the results of the oscillatory parameter set search. Output is encoded as:
+```julia
+pin_result = Dict("model" => "ReactionSystem of the gene regulatory network",
+                  "parameter_sets" => "Dataframe of parameter sets",
+                  "equilibration_result" => "Dataframe containing result metrics for the equilibration of parameter sets",
+                  "simulation_result" => "Dataframe containing result metrics for the simulated parameter sets",)
+```
+"""
+function find_grn_oscillations(connectivity::AbstractMatrix, samples::Int; initial_conditions=NaN)
+    model = gene_regulatory_network(connectivity)
+    N = length(species(model))
+    parameter_sets = grn_parameter_sets(model, samples)
+    equilibration_times = grn_equilibration_times(model, parameter_sets)
+    if isnan(initial_conditions)
+        initial_conditions = [10.0*ones(N) for i=1:samples]
+    end
+    # Equilibrate
+    equilibration_data = equilibrate_ODEs(model, parameter_sets, initial_conditions, equilibration_times)
+    # Filter out solutions with velocity vector smaller than the mean velocity obtained from the equilibration
+    velocity = equilibration_data["final_velocity"]
+    cutoff = 10 ^ mean(log10.(velocity))
+    filter = velocity .> cutoff
+    simulation_times = pin_simulation_times(equilibration_data, equilibration_times)
+    # Simulate
+    simulation_data = simulate_ODEs(model, parameter_sets[filter,:], equilibration_data["final_state"][filter], simulation_times[filter])
+    # Check for oscillations
+    oscillatory_status = grn_oscillatory_status(simulation_data)
+
+    # Create a dataframe with the parameter sets
+    parameter_map = paramsmap(model)
+    parameter_names = Array{String}(undef, length(parameter_map))
+    for (k, v) in parameter_map
+        parameter_names[v] = string(k)
+    end
+
+    # Create a dataframe with the equilibration result
+    equilibration_result = Dict(
+        "parameter_index" => collect(1:1:samples),
+        "equilibration_times" => equilibration_times,
+        "final_velocity" => equilibration_data["final_velocity"],
+        "frequency" => equilibration_data["frequency"],
+        "is_steady_state" => .!filter,)
+    final_state = mapreduce(permutedims, vcat, equilibration_data["final_state"])
+    for i=1:N
+        equilibration_result["final_state_$(i)"] = final_state[:,i]
+    end
+
+    # Create a dataframe with the simulation result
+    simulation_result = Dict(
+        "parameter_index" => collect(1:1:samples)[filter],
+        "simulation_times" => simulation_times[filter],
+        "is_oscillatory" => oscillatory_status,)
+    final_state = mapreduce(permutedims, vcat, simulation_data["final_state"])
+    for i=1:N
+        frequency = Array{Float64}(undef, 0)
+        power = Array{Float64}(undef, 0)
+        amplitude = Array{Float64}(undef, 0)
+        peak_variation = Array{Float64}(undef, 0)
+        trough_variation = Array{Float64}(undef, 0)
+        for j=1:sum(filter)
+            push!(frequency, simulation_data["frequency_data"][j]["frequency"][i])
+            push!(power, simulation_data["frequency_data"][j]["power"][i])
+            push!(amplitude, simulation_data["amplitude_data"][j]["amplitude"][i])
+            push!(peak_variation, simulation_data["amplitude_data"][j]["peak_variation"][i])
+            push!(trough_variation, simulation_data["amplitude_data"][j]["trough_variation"][i])
+        end
+        simulation_result["final_state_$(i)"] = final_state[:,i]
+        simulation_result["frequency_$(i)"] = frequency
+        simulation_result["fft_power_$(i)"] = power
+        simulation_result["amplitude_$(i)"] = amplitude
+        simulation_result["peak_variation_$(i)"] = peak_variation
+        simulation_result["trough_variation_$(i)"] = trough_variation
+    end
+
+    grn_result = Dict("model" => model,
+                      "parameter_sets" => DataFrame(parameter_sets, parameter_names),
+                      "equilibration_result" => DataFrame(equilibration_result),
+                      "simulation_result" => DataFrame(simulation_result),)
+
+    return grn_result
+end
+
+
