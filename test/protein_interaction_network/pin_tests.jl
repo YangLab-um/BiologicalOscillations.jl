@@ -59,22 +59,18 @@ generated_goodwin = protein_interaction_network([0 0 1;1 0 0;0 -1 0])
 @test_throws DomainError pin_parameters(generated_goodwin, α, β, γ, κ, [1.0, 1.0, 1.0, 1.0])
 
 generated_parameters = pin_parameters(generated_goodwin, α, β, γ, κ, η)
-@test generated_parameters[1] == α[1]
-@test generated_parameters[2] == β[1]
-@test generated_parameters[3] == α[2]
-@test generated_parameters[4] == β[2]
-@test generated_parameters[5] == α[3]
-@test generated_parameters[6] == β[3]
-@test generated_parameters[7] == γ[1]
-@test generated_parameters[8] == κ[1]
-@test generated_parameters[9] == η[1]
-@test generated_parameters[10] == γ[2]
-@test generated_parameters[11] == κ[2]
-@test generated_parameters[12] == η[2]
-@test generated_parameters[13] == γ[3]
-@test generated_parameters[14] == κ[3]
-@test generated_parameters[15] == η[3]
 
+@nonamespace generated_α = [generated_parameters[generated_goodwin.α[i]] for i=1:3]
+@nonamespace generated_β = [generated_parameters[generated_goodwin.β[i]] for i=1:3]
+@nonamespace generated_γ = [generated_parameters[generated_goodwin.γ[i]] for i=1:3]
+@nonamespace generated_κ = [generated_parameters[generated_goodwin.κ[i]] for i=1:3]
+@nonamespace generated_η = [generated_parameters[generated_goodwin.η[i]] for i=1:3]
+
+@test generated_α == α
+@test generated_β == β
+@test generated_γ == γ
+@test generated_κ == κ
+@test generated_η == η
 
 # Test that the correct timescale is obtained
 timescale = pin_timescale(α, β, γ)

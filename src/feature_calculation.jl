@@ -55,8 +55,8 @@ Calculate the amplitude of each signal in `ode_solution` and the relative peak/t
 - `amplitude_data::Dict`: Dictionary containing the amplitude for each signal and the peak/trough variation. The output is encoded as: 
 ```julia
 amplitude_data = Dict('amplitude' => [amp_signal_1, ..., amp_signal_N], 
-                      'peak_variation' => [peak_variation_signal_1, ..., peak_variation_signal_N], 
-                      'trough_variation' => [trough_variation_signal_1, ..., trough_variation_signal_N])
+                      'peak_variation' => [peak_var_signal_1, ..., peak_var_signal_N], 
+                      'trough_variation' => [trough_var_signal_1, ..., trough_var_signal_N])
 ```
 
 # Notes
@@ -90,18 +90,20 @@ end
 
 
 """
-    is_ODE_oscillatory(frequency_data::Dict, amplitude_data::Dict, freq_variation_threshold=0.05, power_threshold=1e-7, amp_variation_threshold=0.01)
+    is_ODE_oscillatory(frequency_data::Dict, amplitude_data::Dict, freq_variation_threshold=0.05, power_threshold=1e-7, amp_variation_threshold=0.05)
 
 Returns true if an `ODESolution` is oscillatory based on the calculated frequency and amplitude. False otherwise.
 
-# Arguments
+# Arguments (Required)
 - `frequency_data::Dict`: The output from [`calculate_main_frequency`](@ref)
 - `amplitude_data::Dict`: The output from [`calculate_amplitude`](@ref)
+
+# Arguments (Optional)
 - `freq_variation_threhsold::Real`: Maximum tolerated variation in frequency between species in the solution to be declared oscillatory. Default value 0.05.
 - `power_threshold::Real`: Minimum spectral power that the main peak has to have to be declared oscillatory. Default value 1e-7.
-- `amp_variation_threhsold::Real`: Maximum tolerated value for peak/trough variation to be declared oscillatory. Default value 0.01.
+- `amp_variation_threhsold::Real`: Maximum tolerated value for peak/trough variation to be declared oscillatory. Default value 0.05.
 """
-function is_ODE_oscillatory(frequency_data::Dict, amplitude_data::Dict, freq_variation_threshold=0.05, power_threshold=1e-7, amp_variation_threshold=0.01)
+function is_ODE_oscillatory(frequency_data::Dict, amplitude_data::Dict; freq_variation_threshold=0.05, power_threshold=1e-7, amp_variation_threshold=0.05)
     # If any quantity is NaN, the system isn't considered oscillatory
     freq_is_nan = any(isnan.(frequency_data["frequency"]))
     amp_is_nan = any(isnan.(amplitude_data["amplitude"]))
