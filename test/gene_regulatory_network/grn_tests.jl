@@ -87,3 +87,8 @@ generated_parameters = grn_parameters(generated_goodwin, α, β, δ, γ, κ, η)
 @test generated_parameters[16] == γ[3]
 @test generated_parameters[17] == κ[3]
 @test generated_parameters[18] == η[3]
+
+# Test that the correct timescale is obtained
+timescale = grn_timescale(α, δ)
+
+@test timescale == 1.0/0.13

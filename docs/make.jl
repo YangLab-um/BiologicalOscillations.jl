@@ -9,4 +9,4 @@ makedocs(
     pages=pages,
     )
 
-deploydocs(repo = "github.com/ftavella/BiologicalOscillations.jl.git",)
+deploydocs(repo = "github.com/YangLab-um/BiologicalOscillations.jl.git",)
