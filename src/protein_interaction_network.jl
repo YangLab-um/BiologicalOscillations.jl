@@ -177,7 +177,7 @@ function pin_parameter_sets(model::ReactionSystem, samples::Int; dimensionless_t
         push!(scales, sampling_scales["η"])
     end
 
-    parameter_array = generate_parameter_sets(samples, limits, scales)
+    parameter_array = generate_parameter_sets(samples, limits, scales; sampling_style=sampling_style)
 
     if dimensionless_time
         parameter_array[:,1] .= 1.0
@@ -211,7 +211,6 @@ function pin_equilibration_times(model::ReactionSystem, parameter_sets::Abstract
         α = p[1:2:2N]
         β = p[2:2:2N]
         γ = p[2N+1:3:2N+3E]
-        
         timescale = pin_timescale(α, β, γ)
         push!(equilibration_times, timescale * equilibration_time_multiplier)
     end
@@ -223,7 +222,7 @@ end
 """
     pin_simulation_times(equilibration_data::Dict, equilibration_times::AbstractVector; simulation_time_multiplier=10)
 
-Calculates the simulation times for each parameter set
+Calculates the simulation times for each parameter set in a protein interaction network model
 
 # Arguments (Required)
 - `equilibration_data::Dict`: Dictionary of equilibration data generated with [`equilibrate_ODEs`](@ref)
@@ -260,7 +259,7 @@ Calculates the oscillatory status for each parameter set using the functionality
 - `simulation_data::Dict`: Dictionary of simulation data generated with [`simulate_ODEs`](@ref)
 
 # Returns
-- `oscillatory_status::Array{Bool}`: Boolean array of oscillatory status
+- `oscillatory_status::Array{Bool}`: Boolean array indicating whether each parameter set is oscillatory or not.
 """
 function pin_oscillatory_status(simulation_data::Dict)
     oscillatory_status = Array{Bool}(undef, 0)
@@ -283,30 +282,27 @@ Finds oscillatory parameter sets in a protein interaction network
 
 # Arguments (Required)
 - `connectivity::AbstractMatrix`: Connectivity matrix of the protein interaction network
-- `samples::Int`: Number of parameter sets to sample
+- `samples::Int`: Number of parameter sets to test
 
 # Arguments (Optional)
 - `initial_conditions::AbstractVector`: Initial conditions for the ODEs provided as a vector of vectors. If not specified, the initial conditions are set to 0.5 for all variables. 
 
 # Returns
-- `pin_result::Dict`: A ditionary containing the results of the oscillatory parameter set search. Output is encoded as:
+- `pin_result::Dict`: A dictionary containing the results of the oscillatory parameter set search. Output is encoded as:
 ```julia
 pin_result = Dict("model" => "ReactionSystem of the protein interaction network",
                   "parameter_sets" => "Dataframe of parameter sets",
                   "equilibration_result" => "Dataframe containing result metrics for the equilibration of parameter sets",
                   "simulation_result" => "Dataframe containing result metrics for the simulated parameter sets",)
 ```
-
-# Notes
-- Non oscillatory time series are encoded as a matrix where the first column corresponds to time and the rest correspond to the values of each variable
 """
 function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; initial_conditions=NaN)
     model = protein_interaction_network(connectivity)
-    nodes = length(species(model))
+    N = length(species(model))
     parameter_sets = pin_parameter_sets(model, samples)
     equilibration_times = pin_equilibration_times(model, parameter_sets)
     if isnan(initial_conditions)
-        initial_conditions = [0.5*ones(nodes) for i=1:samples]
+        initial_conditions = [0.5*ones(N) for i=1:samples]
     end
     # Equilibrate
     equilibration_data = equilibrate_ODEs(model, parameter_sets, initial_conditions, equilibration_times)
@@ -335,8 +331,8 @@ function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; initi
         "frequency" => equilibration_data["frequency"],
         "is_steady_state" => .!filter,)
     final_state = mapreduce(permutedims, vcat, equilibration_data["final_state"])
-    for n=1:nodes
-        equilibration_result["final_state_$(n)"] = final_state[:,n]
+    for i=1:N
+        equilibration_result["final_state_$(i)"] = final_state[:,i]
     end
 
     # Create a dataframe with the simulation result
@@ -345,25 +341,25 @@ function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; initi
         "simulation_times" => simulation_times[filter],
         "is_oscillatory" => oscillatory_status,)
     final_state = mapreduce(permutedims, vcat, simulation_data["final_state"])
-    for n=1:nodes
+    for i=1:N
         frequency = Array{Float64}(undef, 0)
         power = Array{Float64}(undef, 0)
         amplitude = Array{Float64}(undef, 0)
         peak_variation = Array{Float64}(undef, 0)
         trough_variation = Array{Float64}(undef, 0)
-        for i=1:sum(filter)
-            push!(frequency, simulation_data["frequency_data"][i]["frequency"][n])
-            push!(power, simulation_data["frequency_data"][i]["power"][n])
-            push!(amplitude, simulation_data["amplitude_data"][i]["amplitude"][n])
-            push!(peak_variation, simulation_data["amplitude_data"][i]["peak_variation"][n])
-            push!(trough_variation, simulation_data["amplitude_data"][i]["trough_variation"][n])
+        for j=1:sum(filter)
+            push!(frequency, simulation_data["frequency_data"][j]["frequency"][i])
+            push!(power, simulation_data["frequency_data"][j]["power"][i])
+            push!(amplitude, simulation_data["amplitude_data"][j]["amplitude"][i])
+            push!(peak_variation, simulation_data["amplitude_data"][j]["peak_variation"][i])
+            push!(trough_variation, simulation_data["amplitude_data"][j]["trough_variation"][i])
         end
-        simulation_result["final_state_$(n)"] = final_state[:,n]
-        simulation_result["frequency_$(n)"] = frequency
-        simulation_result["fft_power_$(n)"] = power
-        simulation_result["amplitude_$(n)"] = amplitude
-        simulation_result["peak_variation_$(n)"] = peak_variation
-        simulation_result["trough_variation_$(n)"] = trough_variation
+        simulation_result["final_state_$(i)"] = final_state[:,i]
+        simulation_result["frequency_$(i)"] = frequency
+        simulation_result["fft_power_$(i)"] = power
+        simulation_result["amplitude_$(i)"] = amplitude
+        simulation_result["peak_variation_$(i)"] = peak_variation
+        simulation_result["trough_variation_$(i)"] = trough_variation
     end
 
     pin_result = Dict("model" => model,

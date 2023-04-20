@@ -46,7 +46,7 @@ end
 
 
 """
-    equilibrate_ODEs(model::ReactionSystem, parameter_sets::AbstractArray, initial_conditions::AbstractVector, equilibration_times::AbstractVector, solver=RadauIIA5(), abstol::Real=1e-7, reltol::Real=1e-4, maxiters=1e7)
+    equilibrate_ODEs(model::ReactionSystem, parameter_sets::AbstractArray, initial_conditions::AbstractVector, equilibration_times::AbstractVector; solver=RadauIIA5(), abstol::Real=1e-7, reltol::Real=1e-4, maxiters=1e7)
 
 Simulates a `model` for the different `parameter_sets` until the predetermined `equilibration_times` are reached.
 
