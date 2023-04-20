@@ -36,6 +36,7 @@ Latexify = "0.15"
 LatinHypercubeSampling = "1"
 ModelingToolkit = "8"
 Plots = "1"
+Revise = "3"
 PyPlot = "2"
 julia = "1.8"
 
