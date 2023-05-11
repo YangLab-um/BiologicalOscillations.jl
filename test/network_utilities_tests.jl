@@ -47,11 +47,60 @@ end
 
 # Test the unique_network_additions function
 base_connectivity = [0 0 -1;-1 0 0; 0 -1 0]
-true_unique_addtions = [
+true_unique_additions = [
     [1 0 -1;-1 0 0; 0 -1 0], [-1 0 -1;-1 0 0; 0 -1 0],
     [0 1 -1;-1 0 0; 0 -1 0], [0 -1 -1;-1 0 0; 0 -1 0],
 ]
 calculated_unique_additions = unique_network_additions(base_connectivity, 1)
-for addition in true_unique_addtions
+# Test size is the is the same
+@test length(true_unique_additions) == length(calculated_unique_additions)
+for addition in true_unique_additions
     @test any([is_same_network(addition, calculated_addition) for calculated_addition in calculated_unique_additions])
+end
+
+# Test the unique_negative_feedback_networks function
+true_unique_3_nodes = [
+    [0 0 -1;-1 0 0; 0 -1 0], [0 0 1;1 0 0;0 -1 0]
+]
+calculated_unique_3_nodes = unique_negative_feedback_networks(3)
+
+@test length(true_unique_3_nodes) == length(calculated_unique_3_nodes)
+for network in true_unique_3_nodes
+    @test any([is_same_network(network, calculated_network) for calculated_network in calculated_unique_3_nodes])
+end
+
+true_unique_4_nodes = [
+    [0 0 0 -1; 1 0 0 0; 0 -1 0 0; 0 0 -1 0], [0 0 0 -1; 1 0 0 0; 0 1 0 0; 0 0 1 0]
+]
+calculated_unique_4_nodes = unique_negative_feedback_networks(4)
+
+@test length(true_unique_4_nodes) == length(calculated_unique_4_nodes)
+for network in true_unique_4_nodes
+    @test any([is_same_network(network, calculated_network) for calculated_network in calculated_unique_4_nodes])
+end
+
+true_unique_5_nodes = [
+    [0 0 0 0 -1; -1 0 0 0 0; 0 -1 0 0 0; 0 0 -1 0 0; 0 0 0 -1 0], [0 0 0 0 -1; 1 0 0 0 0; 0 1 0 0 0; 0 0 -1 0 0; 0 0 0 -1 0],
+    [0 0 0 0 -1; 1 0 0 0 0; 0 -1 0 0 0; 0 0 1 0 0; 0 0 0 -1 0], [0 0 0 0 -1; 1 0 0 0 0; 0 1 0 0 0; 0 0 1 0 0; 0 0 0 1 0]
+]
+calculated_unique_5_nodes = unique_negative_feedback_networks(5)
+
+@test length(true_unique_5_nodes) == length(calculated_unique_5_nodes)
+for network in true_unique_5_nodes
+    @test any([is_same_network(network, calculated_network) for calculated_network in calculated_unique_5_nodes])
+end
+
+true_unique_6_nodes = [
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 -1 0 0 0 0; 0 0 -1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 -1 0],
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 -1 0],
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 -1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 -1 0],
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 -1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 1 0], 
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 -1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 1 0],
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0], 
+]
+calculated_unique_6_nodes = unique_negative_feedback_networks(6)
+
+@test length(true_unique_6_nodes) == length(calculated_unique_6_nodes)
+for network in true_unique_6_nodes
+    @test any([is_same_network(network, calculated_network) for calculated_network in calculated_unique_6_nodes])
 end

@@ -18,7 +18,7 @@ export pin_hit_rate
 export gene_regulatory_network, grn_parameters, grn_timescale, grn_parameter_sets
 export grn_equilibration_times, grn_simulation_times, grn_oscillatory_status, find_grn_oscillations
 # Network utilities
-export network_permutations, is_same_network, all_network_additions, unique_network_additions
+export network_permutations, is_same_network, all_network_additions, unique_network_additions, unique_negative_feedback_networks
 
 include("models.jl")
 include("simulation.jl")

@@ -115,3 +115,55 @@ function unique_network_additions(connectivity::AbstractMatrix, number_of_edges:
 
     return connectivity_vector
 end
+
+
+"""
+    unique_negative_feedback_networks(nodes::Int64)
+
+    Returns a vector containing all unique negative feedback networks of a given size.
+
+# Arguments (Required)
+- `nodes::Int64`: Number of nodes in the network
+
+# Returns
+- `connectivity_vector::AbstractVector`: Vector containing all unique negative feedback networks of a given size
+"""
+function unique_negative_feedback_networks(nodes::Int64)
+    # Initialize it as a vector of matrices with int64s
+    connectivity_vector = Array{Matrix{Int64}}(undef, 0)
+    # Calculate the combinations of positive and negative edges for a network of size nodes
+    # If nodes is an odd number, then the possible number of positive edges is 2, 4, 6, ..., nodes-1
+    # If nodes is an even number, then the possible number of positive edges is 1, 3, 5, ..., nodes-1
+    if mod(nodes, 2) == 0
+        possible_positive_edges = collect(1:2:nodes-1)
+    else
+        possible_positive_edges = collect(0:2:nodes-1)
+    end
+    # Iterate over number of positive edges
+    for positive_edges in possible_positive_edges
+        subset_connectivity_vector = Array{Matrix{Int64}}(undef, 0)
+        signs = [[1 for i in 1:positive_edges]; [-1 for i in 1:nodes-positive_edges]]
+        # Get all possible combinations of signs for the additions
+        sign_combinations = unique(permutations(signs))
+        # Create all possible networks
+        for sign_combination in sign_combinations
+            # Create a copy of the connectivity matrix
+            new_connectivity = zeros(Int64, nodes, nodes)
+            # Add the edges
+            for (i,sign) in enumerate(sign_combination)
+                new_connectivity[i, i] = sign
+            end
+            # Create negative feedback loop by shifting the rows one position up
+            new_connectivity = circshift(new_connectivity, (0, -1))
+            push!(subset_connectivity_vector, new_connectivity)
+        end
+        # Remove duplicates
+        for addition in subset_connectivity_vector
+            if !any(is_same_network(addition, c) for c in connectivity_vector)
+                push!(connectivity_vector, addition)
+            end
+        end
+    end
+
+    return connectivity_vector
+end
