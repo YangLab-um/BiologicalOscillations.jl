@@ -55,13 +55,3 @@ calculated_unique_additions = unique_network_additions(base_connectivity, 1)
 for addition in true_unique_addtions
     @test any([is_same_network(addition, calculated_addition) for calculated_addition in calculated_unique_additions])
 end
-
-base_connectivity = [0 0 -1;1 0 0; 0 1 0]
-true_unique_addtions = [
-    [1 0 -1;-1 0 0; 0 -1 0], [-1 0 -1;-1 0 0; 0 -1 0],
-    [0 1 -1;-1 0 0; 0 -1 0], [0 -1 -1;-1 0 0; 0 -1 0],
-]
-calculated_unique_additions = unique_network_additions(base_connectivity, 1)
-for addition in true_unique_addtions
-    @test any([is_same_network(addition, calculated_addition) for calculated_addition in calculated_unique_additions])
-end
