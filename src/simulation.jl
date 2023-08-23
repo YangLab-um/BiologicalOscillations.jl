@@ -1,4 +1,36 @@
 """
+    simulation_times(equilibration_data::Dict, equilibration_times::AbstractVector; simulation_time_multiplier=10)
+
+Calculates the simulation times for each parameter set in a model
+
+# Arguments (Required)
+- `equilibration_data::Dict`: Dictionary of equilibration data generated with [`equilibrate_ODEs`](@ref)
+- `equilibration_times::AbstractVector`: Array of equilibration times generated with [`equilibration_times`](@ref)
+
+# Arguments (Optional)
+- `simulation_time_multiplier::Real`: Factor by which the period (given by the estimated frequency from the equilibration) is multiplied by in order to calculate the final simulation time
+
+# Returns
+- `simulation_times::Array{Float64}`: Array of simulation times
+"""
+function simulation_times(equilibration_data::Dict, equilibration_times::AbstractVector; simulation_time_multiplier=10)
+    simulation_times = Array{Float64}(undef, 0)
+
+    for i in axes(equilibration_data["frequency"], 1)
+        freq = equilibration_data["frequency"][i]
+        if isnan(freq)
+            push!(simulation_times, equilibration_times[i])
+        else
+            push!(simulation_times, simulation_time_multiplier / freq )
+        end
+    end
+
+    return simulation_times
+end
+
+
+
+"""
     generate_parameter_sets(samples::Int, parameter_limits::AbstractVector, sampling_scales::AbstractVector, sampling_style::String="lhc")
 
 Creates an array of parameter sets within the limits provided in `parameter_limits` using either Latin Hypercube Sampling or Random Sampling. Each parameter can be sampled linearly or logarithmically.
