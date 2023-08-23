@@ -156,3 +156,59 @@ function simulate_ODEs(model::ReactionSystem, parameter_sets::AbstractArray, ini
 
     return simulation_data
 end
+
+
+"""
+    calculate_simulation_times(equilibration_data::Dict, equilibration_times::AbstractVector; simulation_time_multiplier=10)
+
+Calculates the simulation times for each parameter set in a model
+
+# Arguments (Required)
+- `equilibration_data::Dict`: Dictionary of equilibration data generated with [`equilibrate_ODEs`](@ref)
+- `equilibration_times::AbstractVector`: Array of equilibration times generated with [`pin_equilibration_times`](@ref)
+
+# Arguments (Optional)
+- `simulation_time_multiplier::Real`: Factor by which the period (given by the estimated frequency from the equilibration) is multiplied by in order to calculate the final simulation time
+
+# Returns
+- `simulation_times::Array{Float64}`: Array of simulation times
+"""
+function calculate_simulation_times(equilibration_data::Dict, equilibration_times::AbstractVector; simulation_time_multiplier=10)
+    simulation_times = Array{Float64}(undef, 0)
+
+    for i in axes(equilibration_data["frequency"], 1)
+        freq = equilibration_data["frequency"][i]
+        if isnan(freq)
+            push!(simulation_times, equilibration_times[i])
+        else
+            push!(simulation_times, simulation_time_multiplier / freq )
+        end
+    end
+
+    return simulation_times
+end
+
+
+"""
+    calculate_oscillatory_status(simulation_data::Dict)
+
+Calculates the oscillatory status for each parameter set using the functionality of [`is_ODE_oscillatory`](@ref)
+
+# Arguments (Required)
+- `simulation_data::Dict`: Dictionary of simulation data generated with [`simulate_ODEs`](@ref)
+
+# Returns
+- `oscillatory_status::Array{Bool}`: Boolean array indicating whether each parameter set is oscillatory or not.
+"""
+function calculate_oscillatory_status(simulation_data::Dict)
+    oscillatory_status = Array{Bool}(undef, 0)
+
+    for i in axes(simulation_data["frequency_data"], 1)
+        freq = simulation_data["frequency_data"][i]
+        amp = simulation_data["amplitude_data"][i]
+        decision = is_ODE_oscillatory(freq, amp)
+        push!(oscillatory_status, decision)
+    end
+
+    return oscillatory_status
+end
