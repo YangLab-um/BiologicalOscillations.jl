@@ -233,62 +233,6 @@ end
 
 
 """
-    grn_simulation_times(equilibration_data::Dict, equilibration_times::AbstractVector; simulation_time_multiplier=10)
-
-Calculate the simulation times for a group of parameter sets in a gene regulatory network.
-
-# Arguments (Required)
-- `equilibration_data::Dict`: Equilibration data generated with [`grn_equilibration_data`](@ref)
-- `equilibration_times::AbstractVector`: Equilibration times generated with [`grn_equilibration_times`](@ref)
-
-# Arguments (Optional)
-- `simulation_time_multiplier::Real=10`: Multiplier for the simulation time. The simulation time is calculated as the equilibration period multiplied by this value.
-
-# Returns
-- `simulation_times::AbstractVector`: Simulation times for each parameter set.
-"""
-function grn_simulation_times(equilibration_data::Dict, equilibration_times::AbstractVector; simulation_time_multiplier=10)
-    simulation_times = Array{Float64}(undef, 0)
-
-    for i in axes(equilibration_data["frequency"], 1)
-        freq = equilibration_data["frequency"][i]
-        if isnan(freq)
-            push!(simulation_times, equilibration_times[i])
-        else
-            push!(simulation_times, simulation_time_multiplier / freq )
-        end
-    end
-
-    return simulation_times
-end
-
-
-"""
-    grn_oscillatory_status(simulation_data::Dict)
-
-Determines the oscillatory status of a group of parameter sets in a gene regulatory network.
-
-# Arguments (Required)
-- `simulation_data::Dict`: Simulation data generated with [`simulate_ODEs`](@ref)
-
-# Returns
-- `oscillatory_status::Array{Bool}`: Boolean array indicating whether each parameter set is oscillatory or not.
-"""
-function grn_oscillatory_status(simulation_data::Dict)
-    oscillatory_status = Array{Bool}(undef, 0)
-
-    for i in axes(simulation_data["frequency_data"], 1)
-        freq = simulation_data["frequency_data"][i]
-        amp = simulation_data["amplitude_data"][i]
-        decision = is_ODE_oscillatory(freq, amp)
-        push!(oscillatory_status, decision)
-    end
-
-    return oscillatory_status
-end
-
-
-"""
     find_grn_oscillations(connectivity::AbstractMatrix, samples::Int; initial_conditions::AbstractVector=NaN)
 
 Find oscillatory parameter sets in a gene regulatory network.
@@ -323,11 +267,11 @@ function find_grn_oscillations(connectivity::AbstractMatrix, samples::Int; initi
     velocity = equilibration_data["final_velocity"]
     cutoff = 10 ^ mean(log10.(velocity))
     filter = velocity .> cutoff
-    simulation_times = pin_simulation_times(equilibration_data, equilibration_times)
+    simulation_times = calculate_simulation_times(equilibration_data, equilibration_times)
     # Simulate
     simulation_data = simulate_ODEs(model, parameter_sets[filter,:], equilibration_data["final_state"][filter], simulation_times[filter])
     # Check for oscillations
-    oscillatory_status = grn_oscillatory_status(simulation_data)
+    oscillatory_status = calculate_oscillatory_status(simulation_data)
 
     # Create a dataframe with the parameter sets
     parameter_map = paramsmap(model)
