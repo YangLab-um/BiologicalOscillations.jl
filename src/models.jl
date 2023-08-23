@@ -18,7 +18,6 @@ elowitz_2000 = @reaction_network Elowitz_2000 begin
     μ₃, P₃ --> ∅
 end 
 
-
 """
     guan_2008
 
