@@ -174,3 +174,33 @@ function unique_negative_feedback_networks(nodes::Int64)
 
     return connectivity_vector
 end
+
+
+"""
+    count_inputs_by_coherence(connectivity::AbstractMatrix)
+
+    Returns the total number of coherent and incoherent inputs for a given network.
+
+# Arguments (Required)
+- `connectivity::AbstractMatrix`: Connectivity matrix of a network
+
+# Returns
+- `input_counts::DataFrame`: DataFrame containing the number of coherent and incoherent inputs for a given network
+"""
+function count_inputs_by_coherence(connectivity::AbstractMatrix)
+    # Initialize dataframe
+    input_counts = DataFrame(coherent = 0, incoherent = 0)
+    # Go through each row
+    for row in eachrow(connectivity)
+        n_positive = sum(row .== 1)
+        n_negative = sum(row .== -1)
+
+        coherent = min(n_positive, n_negative)
+        incoherent = (max(n_positive, n_negative) - coherent) / 2
+        incoherent = floor(Int, incoherent)
+
+        input_counts.coherent .+= coherent
+        input_counts.incoherent .+= incoherent
+    end
+    return input_counts
+end
