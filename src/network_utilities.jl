@@ -197,7 +197,7 @@ function count_inputs_by_coherence(connectivity::AbstractMatrix)
 
         incoherent = min(n_positive, n_negative)
         coherent = (max(n_positive, n_negative) - incoherent) / 2
-        coherent = floor(Int, incoherent)
+        coherent = floor(Int, coherent)
 
         input_counts.coherent .+= coherent
         input_counts.incoherent .+= incoherent
