@@ -40,6 +40,13 @@ end
 - `result::Bool`: True if any of the permutations of connectivity 1 is equal to any of the permutations of connectivity2. False otherwise.
 """
 function is_same_network(connectivity1::AbstractMatrix, connectivity2::AbstractMatrix)
+    if connectivity1 == connectivity2
+        return true
+    end
+    # If the sum of edges is different, then the networks are different
+    if sum(connectivity1) != sum(connectivity2)
+        return false
+    end
     permutations1 = network_permutations(connectivity1)
     permutations2 = network_permutations(connectivity2)
     # Compare permutations
