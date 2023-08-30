@@ -116,15 +116,15 @@ end
 # Test the count_inputs_by_coherence function
 connectivity = [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 -1 0 0 0 0; 0 0 -1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 -1 0]
 input_counts = count_inputs_by_coherence(connectivity)
-@test input_counts.coherent == 0
-@test input_counts.incoherent == 0
+@test input_counts.coherent[1] == 0
+@test input_counts.incoherent[1] == 0
 
 connectivity = [0 1 1;1 0 0;0 -1 1]
 input_counts = count_inputs_by_coherence(connectivity)
-@test input_counts.coherent == 1
-@test input_counts.incoherent == 1
+@test input_counts.coherent[1] == 1
+@test input_counts.incoherent[1] == 1
 
 connectivity = [-1 1 1;1 1 1;-1 1 1]
 input_counts = count_inputs_by_coherence(connectivity)
-@test input_counts.coherent == 1
-@test input_counts.incoherent == 2
+@test input_counts.coherent[1] == 1
+@test input_counts.incoherent[1] == 2
