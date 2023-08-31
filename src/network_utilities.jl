@@ -277,7 +277,7 @@ function calculate_loop_length_and_type(connectivity::AbstractMatrix, loop_start
         feedback_sign *= connectivity[current_node, next_node]
         loop_length += 1
     end
-    # Determine the type of the loop
+
     if feedback_sign == 1
         loop_type = "positive"
     elseif feedback_sign == -1
@@ -285,4 +285,38 @@ function calculate_loop_length_and_type(connectivity::AbstractMatrix, loop_start
     end
     loop_properties = DataFrame(length = loop_length, type = loop_type)
     return loop_properties
+end
+
+
+"""
+    classify_single_addition(reference_connectivity::AbstractMatrix, one_added_connectivity::AbstractMatrix)
+
+    Returns the coherence and feedback loop type of a single addition to a reference network.
+
+# Arguments (Required)
+- `reference_connectivity::AbstractMatrix`: Connectivity matrix used as a reference for comparison
+- `one_added_connectivity::AbstractMatrix`: Connectivity matrix with one addition with respect to the reference connectivity
+
+# Returns
+- `addition_properties::DataFrame`: DataFrame containing the coherence and feedback loop type of a single addition to a reference network
+"""
+function classify_single_addition(reference_connectivity::AbstractMatrix, one_added_connectivity::AbstractMatrix)
+    added_edge_indices = findall(reference_connectivity .!= one_added_connectivity)[1]
+    loop_start = [added_edge_indices[1], added_edge_indices[2]]
+    loop_properties = calculate_loop_length_and_type(one_added_connectivity, loop_start)
+
+    node_inputs = one_added_connectivity[added_edge_indices[1], :]
+    node_coherence = calculate_node_coherence(node_inputs)
+    if node_coherence.coherent[1] == 1 && node_coherence.incoherent[1] == 0
+        loop_coherence = "coherent"
+    elseif node_coherence.incoherent[1] == 1 && node_coherence.coherent[1] == 0
+        loop_coherence = "incoherent"
+    else
+        loop_coherence = "unknown"
+    end
+
+    addition_properties = DataFrame(loop_coherence = loop_coherence, 
+                                    loop_length = loop_properties.length, 
+                                    loop_type = loop_properties.type)
+    return addition_properties
 end
