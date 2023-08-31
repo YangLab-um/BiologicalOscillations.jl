@@ -264,6 +264,7 @@ end
 - `loop_properties::DataFrame`: DataFrame containing the length and type of a feedback loop
 """
 function calculate_loop_length_and_type(connectivity::AbstractMatrix, loop_start::AbstractVector)
+    nodes = size(connectivity, 1)
     feedback_sign = connectivity[loop_start...]
     loop_length = 1
     loop_type = "unknown"
@@ -271,11 +272,16 @@ function calculate_loop_length_and_type(connectivity::AbstractMatrix, loop_start
     current_node = loop_start[2]
     next_node = loop_start[2]
     # Backtrace the loop
+    iterations = 0
     while next_node != initial_node
         current_node = next_node
         next_node = findall(connectivity[next_node, :] .!= 0)[1]
         feedback_sign *= connectivity[current_node, next_node]
         loop_length += 1
+        iterations += 1
+        if iterations > nodes
+            error("Loop length is larger than the number of nodes")
+        end
     end
 
     if feedback_sign == 1

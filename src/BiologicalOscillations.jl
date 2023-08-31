@@ -21,6 +21,8 @@ export grn_equilibration_times, find_grn_oscillations
 export network_permutations, is_same_network, all_network_additions, unique_network_additions
 export unique_negative_feedback_networks, count_inputs_by_coherence, is_negative_feedback_network
 export calculate_node_coherence, calculate_loop_length_and_type, classify_single_addition
+# User input handling
+export is_valid_connectivity, connectivity_string_to_matrix
 
 include("models.jl")
 include("simulation.jl")
