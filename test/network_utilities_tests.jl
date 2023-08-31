@@ -213,3 +213,35 @@ node_coherence = calculate_node_coherence(node_inputs)
 node_coherence = calculate_node_coherence(node_inputs)
 @test node_coherence.coherent[1] == 0
 @test node_coherence.incoherent[1] == 0
+
+# Test calculate_loop_length_and_type
+connectivity = [0 0 0 1 -1;-1 0 0 0 0;0 -1 0 0 0;0 0 -1 0 0;0 0 0 -1 0]
+loop_start = [1, 4]
+loop_properties = calculate_loop_length_and_type(connectivity, loop_start)
+@test loop_properties.length[1] == 4
+@test loop_properties.type[1] == "negative"
+
+connectivity = [1 0 0 0 -1;-1 0 0 0 0;0 -1 0 0 0;0 0 -1 0 0;0 0 0 -1 0]
+loop_start = [1, 1]
+loop_properties = calculate_loop_length_and_type(connectivity, loop_start)
+@test loop_properties.length[1] == 1
+@test loop_properties.type[1] == "positive"
+
+connectivity = [0 0 0 0 -1;-1 0 0 1 0;0 -1 0 0 0;0 0 -1 0 0;0 0 0 -1 0]
+loop_start = [2, 4]
+loop_properties = calculate_loop_length_and_type(connectivity, loop_start)
+@test loop_properties.length[1] == 3
+@test loop_properties.type[1] == "positive"
+
+connectivity = [0 0 0 0 -1;-1 0 0 0 0;0 -1 0 1 0;0 0 -1 0 0;0 0 0 -1 0]
+loop_start = [3, 4]
+loop_properties = calculate_loop_length_and_type(connectivity, loop_start)
+@test loop_properties.length[1] == 2
+@test loop_properties.type[1] == "negative"
+
+
+connectivity = [0 0 0 0 -1;-1 0 0 0 0;0 -1 0 -1 0;0 0 -1 0 0;0 0 0 -1 0]
+loop_start = [3, 4]
+loop_properties = calculate_loop_length_and_type(connectivity, loop_start)
+@test loop_properties.length[1] == 2
+@test loop_properties.type[1] == "positive"

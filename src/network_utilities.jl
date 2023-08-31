@@ -249,3 +249,40 @@ function calculate_node_coherence(node_inputs::AbstractArray)
     coherence = DataFrame(coherent = coherent, incoherent = incoherent)
     return coherence
 end
+
+
+"""
+    calculate_loop_length_and_type(connectivity::AbstractMatrix, loop_start::AbstractVector)
+
+    Returns the length and type of a feedback loop given its start node.
+
+# Arguments (Required)
+- `connectivity::AbstractMatrix`: Connectivity matrix of a network
+- `loop_start::AbstractVector`: Vector containing the coordinates of the start node of a feedback loop
+
+# Returns
+- `loop_properties::DataFrame`: DataFrame containing the length and type of a feedback loop
+"""
+function calculate_loop_length_and_type(connectivity::AbstractMatrix, loop_start::AbstractVector)
+    feedback_sign = connectivity[loop_start...]
+    loop_length = 1
+    loop_type = "unknown"
+    initial_node = loop_start[1]
+    current_node = loop_start[2]
+    next_node = loop_start[2]
+    # Backtrace the loop
+    while next_node != initial_node
+        current_node = next_node
+        next_node = findall(connectivity[next_node, :] .!= 0)[1]
+        feedback_sign *= connectivity[current_node, next_node]
+        loop_length += 1
+    end
+    # Determine the type of the loop
+    if feedback_sign == 1
+        loop_type = "positive"
+    elseif feedback_sign == -1
+        loop_type = "negative"
+    end
+    loop_properties = DataFrame(length = loop_length, type = loop_type)
+    return loop_properties
+end
