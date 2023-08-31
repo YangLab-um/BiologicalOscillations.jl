@@ -193,15 +193,10 @@ function count_inputs_by_coherence(connectivity::AbstractMatrix)
     input_counts = DataFrame(coherent = 0, incoherent = 0)
     # Go through each row
     for row in eachrow(connectivity)
-        n_positive = sum(row .== 1)
-        n_negative = sum(row .== -1)
+        node_coherence = calculate_node_coherence(row)
 
-        incoherent = min(n_positive, n_negative)
-        coherent = (max(n_positive, n_negative) - incoherent) / 2
-        coherent = floor(Int, coherent)
-
-        input_counts.coherent .+= coherent
-        input_counts.incoherent .+= incoherent
+        input_counts.coherent .+= node_coherence.coherent
+        input_counts.incoherent .+= node_coherence.incoherent
     end
     return input_counts
 end
@@ -229,4 +224,28 @@ function is_negative_feedback_network(connectivity::AbstractMatrix)
     else
         return true
     end
+end
+
+
+"""
+    calculate_node_coherence(node_inputs::AbstractVector)
+
+    Returns the coherence of a node given its inputs as a DataFrame
+
+# Arguments (Required)
+- `node_inputs::AbstractVector`: Vector containing the inputs of a node
+
+# Returns
+- `coherence::DataFrame`: DataFrame containing the coherence of a node
+"""
+function calculate_node_coherence(node_inputs::AbstractArray)
+    n_positive = sum(node_inputs .== 1)
+    n_negative = sum(node_inputs .== -1)
+
+    incoherent = min(n_positive, n_negative)
+    coherent = (max(n_positive, n_negative) - incoherent) / 2
+    coherent = floor(Int, coherent)
+
+    coherence = DataFrame(coherent = coherent, incoherent = incoherent)
+    return coherence
 end

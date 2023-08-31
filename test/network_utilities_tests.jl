@@ -181,3 +181,35 @@ end
 for network in non_nf_networks
     @test is_negative_feedback_network(network) == false
 end
+
+# Test node_coherence
+node_inputs = [0 0 1 -1 0 0]
+node_coherence = calculate_node_coherence(node_inputs)
+@test node_coherence.coherent[1] == 0
+@test node_coherence.incoherent[1] == 1
+
+node_inputs = [0 0 1 -1 0 1]
+node_coherence = calculate_node_coherence(node_inputs)
+@test node_coherence.coherent[1] == 0
+@test node_coherence.incoherent[1] == 1
+
+node_inputs = [1 0 1 -1 0 1]
+node_coherence = calculate_node_coherence(node_inputs)
+@test node_coherence.coherent[1] == 1
+@test node_coherence.incoherent[1] == 1
+
+node_inputs = [1 0 1 1 0 1]
+node_coherence = calculate_node_coherence(node_inputs)
+@test node_coherence.coherent[1] == 2
+@test node_coherence.incoherent[1] == 0
+
+node_inputs = [1 -1 1 1 -1 1]
+node_coherence = calculate_node_coherence(node_inputs)
+@test node_coherence.coherent[1] == 1
+@test node_coherence.incoherent[1] == 2
+
+node_inputs = [0 0 1 0 0 0]
+node_coherence = calculate_node_coherence(node_inputs)
+node_coherence = calculate_node_coherence(node_inputs)
+@test node_coherence.coherent[1] == 0
+@test node_coherence.incoherent[1] == 0
