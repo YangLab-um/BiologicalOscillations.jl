@@ -301,6 +301,10 @@ end
 - `addition_properties::DataFrame`: DataFrame containing the coherence and feedback loop type of a single addition to a reference network
 """
 function classify_single_addition(reference_connectivity::AbstractMatrix, one_added_connectivity::AbstractMatrix)
+    # Check that the reference connectivity is a negative feedback network
+    if !is_negative_feedback_network(reference_connectivity)
+        error("Reference connectivity should be a negative feedback network")
+    end
     added_edge_indices = findall(reference_connectivity .!= one_added_connectivity)[1]
     loop_start = [added_edge_indices[1], added_edge_indices[2]]
     loop_properties = calculate_loop_length_and_type(one_added_connectivity, loop_start)

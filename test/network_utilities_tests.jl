@@ -278,3 +278,8 @@ addition_properties = classify_single_addition(reference_connectivity, one_add_c
 @test addition_properties.loop_type[1] == "negative"
 @test addition_properties.loop_length[1] == 4
 @test addition_properties.loop_coherence[1] == "incoherent"
+
+# catch error
+reference_connectivity_not_nf = [0 0 -1;-1 0 0; 0 -1 1]
+one_add_connectivity = [1 0 -1;-1 0 0;0 -1 0]
+@test_throws ErrorException classify_single_addition(reference_connectivity_not_nf, one_add_connectivity)
