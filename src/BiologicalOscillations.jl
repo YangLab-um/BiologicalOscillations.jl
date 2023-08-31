@@ -19,7 +19,7 @@ export gene_regulatory_network, grn_parameters, grn_timescale, grn_parameter_set
 export grn_equilibration_times, find_grn_oscillations
 # Network utilities
 export network_permutations, is_same_network, all_network_additions, unique_network_additions
-export unique_negative_feedback_networks, count_inputs_by_coherence
+export unique_negative_feedback_networks, count_inputs_by_coherence, is_negative_feedback_network
 
 include("models.jl")
 include("simulation.jl")

@@ -115,7 +115,8 @@ function unique_network_additions(connectivity::AbstractMatrix, number_of_edges:
     all_additions = all_network_additions(connectivity, number_of_edges)
     # Remove duplicates
     for addition in all_additions
-        if !any(is_same_network(addition, c) for c in connectivity_vector)
+        comparison = [is_same_network(addition, c) for c in connectivity_vector]
+        if !any(comparison)
             push!(connectivity_vector, addition)
         end
     end
@@ -203,4 +204,29 @@ function count_inputs_by_coherence(connectivity::AbstractMatrix)
         input_counts.incoherent .+= incoherent
     end
     return input_counts
+end
+
+
+"""
+    is_negative_feedback_network(connectivity::AbstractMatrix)
+
+    Returns true if the network is a negative-feedback-only network. False otherwise.
+
+# Arguments (Required)
+- `connectivity::AbstractMatrix`: Connectivity matrix of a network
+
+# Returns
+- `result::Bool`: True if the network is a negative-feedback-only network. False otherwise.
+"""
+function is_negative_feedback_network(connectivity::AbstractMatrix)
+    non_zero_edges = connectivity[connectivity .!= 0]
+    # If the number of edges is larger than the number of nodes, then it is not a negative-feedback-only network
+    if sum(abs.(non_zero_edges)) > size(connectivity, 1)
+        return false
+    # If the product of the edges is non-negative, then it is not a negative-feedback-only network
+    elseif prod(non_zero_edges) >= 0
+        return false
+    else
+        return true
+    end
 end
