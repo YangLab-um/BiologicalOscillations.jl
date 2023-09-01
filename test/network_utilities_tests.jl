@@ -104,3 +104,39 @@ calculated_unique_6_nodes = unique_negative_feedback_networks(6)
 for network in true_unique_6_nodes
     @test any([is_same_network(network, calculated_network) for calculated_network in calculated_unique_6_nodes])
 end
+
+# Test the unique_network_additions and unique_cycle_addition functions
+t0 = [
+    0 -1 0 ;
+    0 0 -1 ;
+    -1 0 0 ;
+]
+t2 = [
+    0 1 0 ;
+    0 0 1 ;
+    -1 0 0 ;
+]
+s1 = [
+    0 -1 0 0 ;
+    0 0 -1 0 ;
+    0 0 0 -1 ;
+    1 0 0 0 ; 
+]
+s3 = [
+    0 1 0 0 ;
+    0 0 1 0 ;
+    0 0 0 1 ;
+    -1 0 0 0 ;
+]
+p2 = [
+    0 1 0 0 0 ;
+    0 0 1 0 0 ;
+    0 0 0 -1 0 ;
+    0 0 0 0 -1 ;
+    -1 0 0 0 0 ;
+]
+@test is_same_set_of_networks(unique_network_additions(t0, 1), unique_cycle_addition(t0))
+@test is_same_set_of_networks(unique_network_additions(t2, 1), unique_cycle_addition(t2))
+@test is_same_set_of_networks(unique_network_additions(s1, 1), unique_cycle_addition(s1))
+@test is_same_set_of_networks(unique_network_additions(s3, 1), unique_cycle_addition(s3))
+@test is_same_set_of_networks(unique_network_additions(p2, 1), unique_cycle_addition(p2))
