@@ -55,6 +55,47 @@ end
 
 
 """
+    is_same_set_of_networks(connectivity_vector1::AbstractVector, connectivity_vector2::AbstractVector)
+
+    Returns true if two sets have the same elements up to graph isomorphisms. False otherwise.
+
+# Arguments (Required)
+- `connectivity_vector1::AbstractVector`: Vector containing connectivity matrices
+- `connectivity_vector2::AbstractVector`: Vector containing connectivity matrices. Must have the same length as the first vector
+
+# Returns
+- `result::Bool`: True if two sets are equal. False otherwise. This may include the case where a set is degenerate
+"""
+function is_same_set_of_networks(connectivity_vector1::AbstractVector, connectivity_vector2::AbstractVector)
+    if length(connectivity_vector1) == length(connectivity_vector2)
+        # Check lengths
+        n = length(connectivity_vector1)
+        identity = zeros(Int64, n, n)
+    else
+        return false
+    end
+
+    for i in 1:n
+        for j in 1:n
+            if is_same_network(connectivity_vector1[i], connectivity_vector2[j])
+                identity[i, j] = 1
+            else
+                identity[i, j] = 0
+            end
+        end
+    end
+
+    if (all(sum(identity, dims=1) .== 1) & all(sum(identity, dims=2) .== 1))
+        # Check there is a 1-to-1 map between sets
+        return true
+    else
+        return false
+    end
+end
+
+
+
+"""
     all_network_additions(connectivity::AbstractMatrix, number_of_edges::Int64)
 
     Returns a vector containing all possible network additions of a network connectivity matrix.
