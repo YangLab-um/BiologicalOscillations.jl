@@ -29,17 +29,17 @@ end
 
 
 """
-        connectivity_string_to_matrix(connectivity_string::String)
+        connectivity_string_to_matrix(connectivity_string::AbstractString)
 
     Convert connectivity string to a 2-dimensional square matrix filled with 0, 1, and -1 values.
 
 # Arguments (Required)
-- `connectivity_string::String`: A string representing a connectivity matrix.
+- `connectivity_string::AbstractString`: A string representing a connectivity matrix.
 
 # Returns
 - `AbstractMatrix`: A 2-dimensional square matrix filled with 0, 1, and -1 values.
 """
-function connectivity_string_to_matrix(connectivity_string::String)
+function connectivity_string_to_matrix(connectivity_string::AbstractString)
     connectivity_values = replace(connectivity_string, ";" => "", "[" => "", "]" => "")
     connectivity_array = [parse(Int, i) for i in split(connectivity_values)]
     nodes = convert(Int64, sqrt(length(connectivity_array)))
