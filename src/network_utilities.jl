@@ -208,3 +208,114 @@ function unique_negative_feedback_networks(nodes::Int64)
 
     return connectivity_vector
 end
+
+
+"""
+   connectivity_to_binary(connectivity::AbstractMatrix)
+
+   Returns a binary representation of a circular network.
+
+A binary representation of a circular interaction network tracks the type of interaction (either positive or negative) around the cycle. The current implementation assigns 1 to a positive interaction and 0 to a negative one. For example, the Goodwin oscillator can be represented as `"011"`, `"101"`, or `"110"`. If the nodes are assumed to be indistinguishable, the representation is not unique. Among possible equivalent representations, the smallest number is returned; for the above example, `"011"`.
+
+# Arguments (Required)
+- `connectivity::AbstractMatrix`: Connectivity matrix of a circular interaction network
+
+# Returns
+- `String`: Binary presentation of a circular interaction network. `nothing` if the input is not a directed circular graph
+"""
+function connectivity_to_binary(connectivity::AbstractMatrix)
+    if (all(sum(abs.(connectivity), dims=1) .== 1) & all(sum(abs.(connectivity), dims=2) .== 1))
+        # Input must be a 1-regular digraph
+        binary = ""
+
+        i_next = 1
+
+        while true
+            i_curr = i_next
+            i_next = findfirst(item -> item == 1, abs.(connectivity[:, i_next]))
+
+            if connectivity[i_next, i_curr] == 1
+                binary *= '1'
+            elseif connectivity[i_next, i_curr] == -1
+                binary *= '0'
+            end
+
+            if i_next == 1
+                # Stop traversal upon return to the starting node
+                break
+            end
+        end
+    else
+        return
+    end
+
+    if length(binary) == size(connectivity)[1] == size(connectivity)[2]
+        # Detected cycle must traverse all nodes such that the graph is circular
+        binaries = [join(circshift(split(binary, ""), i)) for i in 1:length(binary)]
+        _, i = findmin(parse.(Int64, binaries, base=2))
+        binary = binaries[i]
+
+        return binary
+    else
+        return
+    end
+end
+
+
+"""
+   binary_to_connectivity(binary::String)
+
+   Returns the connectivity matrix corresponding to the given binary representation of a circular interaction network.
+
+# Arguments (Required)
+- `String`: Binary representation of a circular interaction network.
+
+# Returns
+- `connectivity::AbstractMatrix`: Connectivity matrix corresponding to the binary representation of a circular interaction network
+"""
+function binary_to_connectivity(binary::String)
+    n = length(binary)
+
+    connectivity = zeros(Int64, n, n)
+
+    for i in 1:n
+        connectivity[i, mod(i, n) + 1] = (binary[i] == '1' ? 1 : -1)
+    end
+
+    return connectivity
+end
+
+
+"""
+   unique_cycle_addition(connectivity::AbstractMatrix)
+
+   Returns a vector containing all unique single-interaction additions to a circular network. Supports only the cases where the underlying network is circular and a single interaction is added to it.
+
+# Arguments (Required)
+- `connectivity::AbstractMatrix`: Connectivity matrix of a circular network
+
+# Returns
+- `connectivity_vector::AbstractVector` Vector containing all unique single-interaction additions to a circular network. An empty vector is returned if the given connectivity is not circular
+"""
+function unique_cycle_addition(connectivity::AbstractMatrix)
+    connectivity_vector = []
+
+    binary = connectivity_to_binary(connectivity)
+    binaries = unique([join(circshift(split(binary, ""), i)) for i in 1:length(binary)])
+    # The 1st node can get an additional input from one of the 1st, 2nd, ..., n-1-th nodes
+
+    for binary in binaries
+        matrix = binary_to_connectivity(binary)
+
+        for i in 1:length(binary) - 1
+            for type in [-1, 1]
+                addition = copy(matrix)
+                addition[i, 1] = type
+
+                push!(connectivity_vector, addition)
+            end
+        end
+    end
+
+    return connectivity_vector
+end
