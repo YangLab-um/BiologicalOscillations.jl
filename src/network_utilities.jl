@@ -114,7 +114,6 @@ function is_same_set_of_networks(connectivity_vector1::AbstractVector, connectiv
 end
 
 
-
 """
     all_network_additions(connectivity::AbstractMatrix, number_of_edges::Int64)
 
@@ -241,7 +240,7 @@ A binary representation of a circular interaction network tracks the type of int
 - `connectivity::AbstractMatrix`: Connectivity matrix of a circular interaction network
 
 # Returns
-- `String`: Binary presentation of a circular interaction network. `nothing` if the input is not a directed circular graph
+- `feedback_loop_in_binary::String`: Binary presentation of a circular interaction network. `nothing` if the input is not a directed circular graph
 """
 function connectivity_to_binary(connectivity::AbstractMatrix)
     if !is_directed_cycle_graph(connectivity)
@@ -270,9 +269,9 @@ function connectivity_to_binary(connectivity::AbstractMatrix)
     equivalent_binaries = find_all_binary_circular_permutations(binary)
     _, i = findmin(parse.(Int64, equivalent_binaries, base=2))
     # Find the smallest one from the binary numbers that represent the same network
-    binary = equivalent_binaries[i]
+    feedback_loop_in_binary = equivalent_binaries[i]
 
-    return binary
+    return feedback_loop_in_binary
 end
 
 
@@ -282,10 +281,10 @@ end
    Returns a vector containing all unique circular permutations of a given binary representation.
 
 # Arguments (Required)
-- `String`: Binary representation of a circular interaction network.
+- `feedback_loop_in_binary::String`: Binary representation of a circular interaction network.
 
 # Returns
-- `AbstractVector`: Vector containing all unique circular permutations of given representation
+- `result::AbstractVector`: Vector containing all unique circular permutations of given representation
 """
 function find_all_binary_circular_permutations(feedback_loop_in_binary::String)
     return unique([join(circshift(split(feedback_loop_in_binary, ""), i)) for i in 1:length(feedback_loop_in_binary)])
@@ -293,18 +292,18 @@ end
 
 
 """
-   binary_to_connectivity(binary::String)
+   binary_to_connectivity(feedback_loop_in_binary::String)
 
    Returns the connectivity matrix corresponding to the given binary representation of a circular interaction network.
 
 # Arguments (Required)
-- `String`: Binary representation of a circular interaction network.
+- `feedback_loop_in_binary::String`: Binary representation of a circular interaction network.
 
 # Returns
 - `connectivity::AbstractMatrix`: Connectivity matrix corresponding to the binary representation of a circular interaction network
 """
-function binary_to_connectivity(binary::String)
-    n = length(binary)
+function binary_to_connectivity(feedback_loop_in_binary::String)
+    n = length(feedback_loop_in_binary)
 
     connectivity = zeros(Int64, n, n)
 
