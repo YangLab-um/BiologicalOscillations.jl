@@ -308,7 +308,7 @@ function binary_to_connectivity(feedback_loop_in_binary::String)
     connectivity = zeros(Int64, n, n)
 
     for i in 1:n
-        connectivity[i, mod(i, n) + 1] = (binary[i] == '1' ? 1 : -1)
+        connectivity[i, mod(i, n) + 1] = (feedback_loop_in_binary[i] == '1' ? 1 : -1)
     end
 
     return connectivity
