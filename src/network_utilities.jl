@@ -105,7 +105,7 @@ function is_same_set_of_networks(connectivity_vector1::AbstractVector, connectiv
             end
         end
     end
-    if (all(sum(identity, dims=1) .== 1) & all(sum(identity, dims=2) .== 1))
+    if (all(sum(identity, dims=1) .== 1) && all(sum(identity, dims=2) .== 1))
         # To have a 1-1 map between sets, every column and row of the identity matrix defined above must have exactly one 1 while the other entries being 0
         return true
     else
