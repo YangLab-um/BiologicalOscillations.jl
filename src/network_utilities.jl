@@ -245,41 +245,51 @@ A binary representation of a circular interaction network tracks the type of int
 - `String`: Binary presentation of a circular interaction network. `nothing` if the input is not a directed circular graph
 """
 function connectivity_to_binary(connectivity::AbstractMatrix)
-    if (all(sum(abs.(connectivity), dims=1) .== 1) & all(sum(abs.(connectivity), dims=2) .== 1))
-        # Input must be a 1-regular digraph
-        binary = ""
+    if !is_directed_cycle_graph(connectivity)
+        # Input must be a directed cycle graph to have a binary representation
+        return
+    end
 
-        i_next = 1
+    binary = ""
+    i_next = 1
+    while true
+        i_curr = i_next
+        i_next = findfirst(item -> item == 1, abs.(connectivity[:, i_next]))
 
-        while true
-            i_curr = i_next
-            i_next = findfirst(item -> item == 1, abs.(connectivity[:, i_next]))
-
-            if connectivity[i_next, i_curr] == 1
-                binary *= '1'
-            elseif connectivity[i_next, i_curr] == -1
-                binary *= '0'
-            end
-
-            if i_next == 1
-                # Stop traversal upon return to the starting node
-                break
-            end
+        if connectivity[i_next, i_curr] == 1
+            binary *= '1'
+        elseif connectivity[i_next, i_curr] == -1
+            binary *= '0'
         end
-    else
-        return
+
+        if i_next == 1
+            # Stop traversal upon return to the starting node
+            break
+        end
     end
 
-    if length(binary) == size(connectivity)[1] == size(connectivity)[2]
-        # Detected cycle must traverse all nodes such that the graph is circular
-        binaries = [join(circshift(split(binary, ""), i)) for i in 1:length(binary)]
-        _, i = findmin(parse.(Int64, binaries, base=2))
-        binary = binaries[i]
+    equivalent_binaries = find_all_binary_circular_permutations(binary)
+    _, i = findmin(parse.(Int64, equivalent_binaries, base=2))
+    # Find the smallest one from the binary numbers that represent the same network
+    binary = equivalent_binaries[i]
 
-        return binary
-    else
-        return
-    end
+    return binary
+end
+
+
+"""
+   find_all_binary_circular_permutations(feedback_loop_in_binary::String)
+
+   Returns a vector containing all unique circular permutations of a given binary representation.
+
+# Arguments (Required)
+- `String`: Binary representation of a circular interaction network.
+
+# Returns
+- `AbstractVector`: Vector containing all unique circular permutations of given representation
+"""
+function find_all_binary_circular_permutations(feedback_loop_in_binary::String)
+    return unique([join(circshift(split(feedback_loop_in_binary, ""), i)) for i in 1:length(feedback_loop_in_binary)])
 end
 
 
@@ -321,8 +331,8 @@ end
 function unique_cycle_addition(connectivity::AbstractMatrix)
     connectivity_vector = []
 
-    binary = connectivity_to_binary(connectivity)
-    binaries = unique([join(circshift(split(binary, ""), i)) for i in 1:length(binary)])
+    feedback_loop_in_binary = connectivity_to_binary(connectivity)
+    binaries = find_all_binary_circular_permutations(feedback_loop_in_binary)
     # The 1st node can get an additional input from one of the 1st, 2nd, ..., n-1-th nodes
 
     for binary in binaries
