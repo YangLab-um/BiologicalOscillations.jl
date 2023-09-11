@@ -88,14 +88,14 @@ end
 - `result::Bool`: True if two sets are equal. False otherwise. This may include the case where a set is degenerate
 """
 function is_same_set_of_networks(connectivity_vector1::AbstractVector, connectivity_vector2::AbstractVector)
-    if length(connectivity_vector1) == length(connectivity_vector2)
-        # Check lengths
-        n = length(connectivity_vector1)
-        identity = zeros(Int64, n, n)
-    else
+    # Test 1: compare sizes of each set. If they are different, return false
+    if length(connectivity_vector1) != length(connectivity_vector2)
         return false
     end
 
+    # Test 2: exhaustively check if there is a 1-1 map between set elements. This automatically tests if there are redundant elements in each set
+    n = length(connectivity_vector1)
+    identity = zeros(Int64, n, n)
     for i in 1:n
         for j in 1:n
             if is_same_network(connectivity_vector1[i], connectivity_vector2[j])
@@ -105,9 +105,8 @@ function is_same_set_of_networks(connectivity_vector1::AbstractVector, connectiv
             end
         end
     end
-
     if (all(sum(identity, dims=1) .== 1) & all(sum(identity, dims=2) .== 1))
-        # Check there is a 1-to-1 map between sets
+        # To have a 1-1 map between sets, every column and row of the identity matrix defined above must have exactly one 1 while the other entries being 0
         return true
     else
         return false
