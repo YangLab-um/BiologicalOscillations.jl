@@ -55,6 +55,27 @@ end
 
 
 """
+   is_directed_cycle_graph(connectivity::AbstractMatrix)
+
+   Returns true if the given connectivity matrix represents a directed cycle graph. Types of interactions (positive or negative) are ignored.
+
+# Arguments (Required)
+- `connectivity::AbstractMatrix`: Connectivity matrix of an interaction network
+
+# Returns
+- `result::Bool`: True if the interaction network is directed cyclic
+"""
+function is_directed_cycle_graph(connectivity::AbstractMatrix)
+    n = size(connectivity)[1]
+    reference_circular_graph = zeros(Int64, n, n)    
+    for i in 1:n
+        reference_circular_graph[i, mod(i - 2, n) + 1] = 1
+    end
+    return is_same_network(abs.(connectivity), reference_circular_graph)
+end
+
+
+"""
     is_same_set_of_networks(connectivity_vector1::AbstractVector, connectivity_vector2::AbstractVector)
 
     Returns true if two sets have the same elements up to graph isomorphisms. False otherwise.
