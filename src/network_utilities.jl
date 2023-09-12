@@ -308,7 +308,7 @@ function binary_to_connectivity(feedback_loop_in_binary::String)
     connectivity = zeros(Int64, n, n)
 
     for i in 1:n
-        connectivity[i, mod(i, n) + 1] = (feedback_loop_in_binary[i] == '1' ? 1 : -1)
+        connectivity[mod(i, n) + 1, i] = (feedback_loop_in_binary[i] == '1' ? 1 : -1)
     end
 
     return connectivity
@@ -339,7 +339,7 @@ function unique_cycle_addition(connectivity::AbstractMatrix)
         for i in 1:length(binary) - 1
             for type in [-1, 1]
                 addition = copy(matrix)
-                addition[i, 1] = type
+                addition[1, i] = type
 
                 push!(connectivity_vector, addition)
             end
