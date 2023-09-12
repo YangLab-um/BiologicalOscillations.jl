@@ -105,36 +105,65 @@ for network in true_unique_6_nodes
     @test any([is_same_network(network, calculated_network) for calculated_network in calculated_unique_6_nodes])
 end
 
+# Test is_directed_cycle_graph function
+@test is_directed_cycle_graph([0 1 0; 0 0 1; 1 0 0])  # forward cycle
+@test is_directed_cycle_graph([0 0 1; 1 0 0; 0 1 0])  # backward cycle
+@test !is_directed_cycle_graph([0 1 0; 0 0 1; 1 0 1])  # two cycles case 1
+@test !is_directed_cycle_graph([0 0 1; 1 0 1; 0 1 0])  # two cycles case 2
+@test !is_directed_cycle_graph([0 1 0; 0 0 1; 0 0 0])  # dangling end
+
+# Test is_same_set_of_networks
+@test is_same_set_of_networks([[1 0 1; 1 0 0; 0 1 0], [0 0 1; 1 -1 0; 0 1 0]], [[1 0 1; 1 0 0; 0 1 0], [-1 0 1; 1 0 0; 0 1 0]])  # same sets up to permutations
+@test !is_same_set_of_networks([[1 0 1; 1 0 0; 0 1 0], [0 0 1; 1 -1 0; 0 1 0]], [[1 0 1; 1 0 0; 0 1 0]])  # inputs with different lengths
+@test !is_same_set_of_networks([[1 0 1; 1 0 0; 0 1 0], [0 0 1; 1 1 0; 0 1 0]], [[1 0 1; 1 0 0; 0 1 0], [-1 0 1; 1 0 0; 0 1 0]])  # duplicate elements (up to permutations) in one set
+
+# Test connectivity_to_binary and binary_to_connectivity functions
+t0 = [0 0 -1; -1 0 0; 0 -1 0]
+t2 = [0 0 -1; 1 0 0; 0 1 0]
+s1 = [0 0 0 -1; -1 0 0 0; 0 -1 0 0; 0 0 1 0]
+s3 = [0 0 0 -1; 1 0 0 0; 0 1 0 0; 0 0 1 0]
+p2 = [0 0 0 0 -1; -1 0 0 0 0; 0 -1 0 0 0; 0 0 1 0 0; 0 0 0 1 0]
+
+@test connectivity_to_binary(t0) == "000"
+@test connectivity_to_binary(t2) == "011"
+@test connectivity_to_binary(s1) == "0001"
+@test connectivity_to_binary(s3) == "0111"
+@test connectivity_to_binary(p2) == "00011"
+
+@test is_same_network(binary_to_connectivity("000"), t0)
+
+@test is_same_network(binary_to_connectivity("011"), t2)
+@test is_same_network(binary_to_connectivity("101"), t2)
+@test is_same_network(binary_to_connectivity("110"), t2)
+
+@test is_same_network(binary_to_connectivity("0001"), s1)
+@test is_same_network(binary_to_connectivity("0010"), s1)
+@test is_same_network(binary_to_connectivity("0100"), s1)
+@test is_same_network(binary_to_connectivity("1000"), s1)
+
+@test is_same_network(binary_to_connectivity("0111"), s3)
+@test is_same_network(binary_to_connectivity("1011"), s3)
+@test is_same_network(binary_to_connectivity("1101"), s3)
+@test is_same_network(binary_to_connectivity("1110"), s3)
+
+@test is_same_network(binary_to_connectivity("00011"), p2)
+@test is_same_network(binary_to_connectivity("00110"), p2)
+@test is_same_network(binary_to_connectivity("01100"), p2)
+@test is_same_network(binary_to_connectivity("10001"), p2)
+@test is_same_network(binary_to_connectivity("11000"), p2)
+
+@test !is_same_network(binary_to_connectivity("00101"), p2)
+@test !is_same_network(binary_to_connectivity("01001"), p2)
+@test !is_same_network(binary_to_connectivity("01010"), p2)
+@test !is_same_network(binary_to_connectivity("10010"), p2)
+@test !is_same_network(binary_to_connectivity("10100"), p2)
+
+# Test find_all_binary_circular_permutations function
+@test Set(find_all_binary_circular_permutations("110")) == Set(["110", "101", "011"])
+@test Set(find_all_binary_circular_permutations("1010")) == Set(["1010", "0101"])
+@test Set(find_all_binary_circular_permutations("1010")) != Set(["1010", "0101", "0011", "0110", "1100", "1001"])
+
 # Test the unique_network_additions and unique_cycle_addition functions
-t0 = [
-    0 -1 0 ;
-    0 0 -1 ;
-    -1 0 0 ;
-]
-t2 = [
-    0 1 0 ;
-    0 0 1 ;
-    -1 0 0 ;
-]
-s1 = [
-    0 -1 0 0 ;
-    0 0 -1 0 ;
-    0 0 0 -1 ;
-    1 0 0 0 ; 
-]
-s3 = [
-    0 1 0 0 ;
-    0 0 1 0 ;
-    0 0 0 1 ;
-    -1 0 0 0 ;
-]
-p2 = [
-    0 1 0 0 0 ;
-    0 0 1 0 0 ;
-    0 0 0 -1 0 ;
-    0 0 0 0 -1 ;
-    -1 0 0 0 0 ;
-]
 @test is_same_set_of_networks(unique_network_additions(t0, 1), unique_cycle_addition(t0))
 @test is_same_set_of_networks(unique_network_additions(t2, 1), unique_cycle_addition(t2))
 @test is_same_set_of_networks(unique_network_additions(s1, 1), unique_cycle_addition(s1))
