@@ -67,10 +67,7 @@ end
 """
 function is_directed_cycle_graph(connectivity::AbstractMatrix)
     n = size(connectivity)[1]
-    reference_circular_graph = zeros(Int64, n, n)    
-    for i in 1:n
-        reference_circular_graph[i, mod(i - 2, n) + 1] = 1
-    end
+    reference_circular_graph = binary_to_connectivity("1"^n)
     return is_same_network(abs.(connectivity), reference_circular_graph)
 end
 
