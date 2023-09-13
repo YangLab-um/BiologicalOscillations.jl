@@ -35,7 +35,7 @@ DEFAULT_PIN_HYPERPARAMETERS = Dict(
     "initial_conditions" => NaN, # Set of initial conditions for `find_pin_oscillations`. Size should be equal to the number of samples indicated. If NaN, all species are initialized at 0.5.
     "equilibration_time_multiplier" => 10, # Multiplier applied to the slowest timescale to determine the equilibration time in `pin_equilibration_times`.
     "dimensionless_time" => true, # Whether to use dimensionless time in `pin_parameter_sets`. If true, the α parameter of the first node is set to 1 for all parameter sets. If false, no changes are made to the parameter sets.
-    "parameter_limits" => DEFAULT_PIN_HYPERPARAMETERS,
+    "parameter_limits" => DEFAULT_PIN_PARAMETER_LIMITS,
     "sampling_scales" => DEFAULT_PIN_SAMPLING_SCALES,
     "sampling_style" => "lhc", # Sampling style for `pin_parameter_sets`. Can be "lhc" (Latin Hypercube) or "random" (Uniform).
     "solver" => RadauIIA5(), # Solver used for the integration of the ODEs in `find_pin_oscillations`.
@@ -89,7 +89,7 @@ DEFAULT_GRN_HYPERPARAMETERS = Dict(
     "initial_conditions" => NaN,  # Set of initial conditions for `find_grn_oscillations`. Size should be equal to the number of samples indicated. If NaN, all species are initialized at 10.
     "equilibration_time_multiplier" => 10, # Multiplier applied to the slowest timescale to determine the equilibration time in `grn_equilibration_times`.
     "dimensionless_time" => true, # Whether to use dimensionless time in `grn_parameter_sets`. If true, the α parameter of the first node is set to 1 and the first N (N = number of nodes) κ are set to 1 for all parameter sets. If false, no changes are made to the parameter sets.
-    "parameter_limits" => DEFAULT_GRN_HYPERPARAMETERS,
+    "parameter_limits" => DEFAULT_GRN_PARAMETER_LIMITS,
     "sampling_scales" => DEFAULT_GRN_SAMPLING_SCALES,
     "sampling_style" => "lhc",  # Sampling style for `grn_parameter_sets`. Can be "lhc" (Latin Hypercube) or "random" (Uniform).
     "solver" => RadauIIA5(), # Solver used for the integration of the ODEs in `find_grn_oscillations`.
