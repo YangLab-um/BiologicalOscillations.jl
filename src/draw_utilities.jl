@@ -1,4 +1,4 @@
-draw_default_config = Dict(
+DRAW_DEFAULT_CONFIG = Dict(
     :output => nothing,
     :scale => 100.0,
     :line_width => 2.0,
@@ -60,7 +60,7 @@ end
 # Arguments (Optional)
 - `draw_config::Dict`: Specification of drawing styles
 """
-function draw_node(type::Int, x::Float64, y::Float64; draw_config::Dict = draw_default_config)
+function draw_node(type::Int, x::Float64, y::Float64; draw_config::Dict = DRAW_DEFAULT_CONFIG)
     # Unpack drawing settings
     scale = draw_config[:scale]
     relative_node_radius = draw_config[:relative_node_radius]
@@ -100,7 +100,7 @@ end
 # Arguments (Optional)
 - `draw_config::Dict`: Specification of drawing styles
 """
-function draw_edge(type::Int, x1::Float64, y1::Float64; draw_config::Dict = draw_default_config)
+function draw_edge(type::Int, x1::Float64, y1::Float64; draw_config::Dict = DRAW_DEFAULT_CONFIG)
     # Unpack drawing settings
     scale = draw_config[:scale]
     line_width = draw_config[:line_width]
@@ -151,7 +151,7 @@ end
 - `offset::Bool`: If true, the edge will be drawn slightly away from the line that joins the exact centers of nodes. If there are both forward and backward interactions between nodes, consider using this option to avoid edges being overlapped.
 - `draw_config::Dict`: Specification of drawing styles
 """
-function draw_edge(type::Int, x1::Float64, y1::Float64, x2::Float64, y2::Float64; offset::Bool = false, draw_config::Dict = draw_default_config)
+function draw_edge(type::Int, x1::Float64, y1::Float64, x2::Float64, y2::Float64; offset::Bool = false, draw_config::Dict = DRAW_DEFAULT_CONFIG)
     # Unpack drawing settings
     scale = draw_config[:scale]
     relative_node_radius = draw_config[:relative_node_radius]
@@ -230,7 +230,7 @@ end
 # Arguments (Optional)
 - `draw_config::Dict`: Specification of drawing styles
 """
-function draw_cycle(type::Int, xs::AbstractArray, ys::AbstractArray; draw_config::Dict = draw_default_config)
+function draw_cycle(type::Int, xs::AbstractArray, ys::AbstractArray; draw_config::Dict = DRAW_DEFAULT_CONFIG)
     # Unpack drawing settings
     scale = draw_config[:scale]
     line_width = draw_config[:line_width]
@@ -317,7 +317,7 @@ function draw_connectivity(connectivity::AbstractMatrix; coherent_nodes::Abstrac
         return error("Type for following cycles is ambiguous: $(join(ambiguous_cycles, ',')).")
     end
 
-    draw_config = merge(draw_default_config, Dict(kwargs))
+    draw_config = merge(DRAW_DEFAULT_CONFIG, Dict(kwargs))
 
     output = draw_config[:output]
     if isnothing(output)
