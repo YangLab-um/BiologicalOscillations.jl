@@ -357,14 +357,17 @@ Estimates the hit rate of the oscillatory parameter set search in a protein inte
 - `max_samples::Int`: Maximum number of samples allowed
 - `max_trials::Int`: Maximum number of trials allowed
 - `hyperparameters::Dict`: Dictionary of hyperparameters for the algorithm. Default values are defined in [`DEFAULT_PIN_HYPERPARAMETERS`](@ref).
+- `verbose::Bool`: Whether to print the number of oscillatory parameter sets found in each trial. Default value is `true`.
 
 # Returns
 - `hit_rate::Real`: Estimated hit rate
 """
-function pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target_oscillations::Int=100, max_samples::Int=1000000, max_trials::Int=5, hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
+function pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target_oscillations::Int=100, max_samples::Int=1000000, max_trials::Int=5, hyperparameters=DEFAULT_PIN_HYPERPARAMETERS, verbose=true)
     pin_result = find_pin_oscillations(connectivity, initial_samples, hyperparameters=hyperparameters)
     oscillatory = sum(pin_result["simulation_result"][!,"is_oscillatory"])
-    println("Oscillatory: $oscillatory, Samples $initial_samples")
+    if verbose
+        println("Oscillatory: $oscillatory, Samples $initial_samples")
+    end
     hit_rate =  oscillatory / initial_samples
 
     if oscillatory > target_oscillations
@@ -380,7 +383,9 @@ function pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target
             end
             pin_result = find_pin_oscillations(connectivity, samples, hyperparameters=hyperparameters)
             oscillatory = sum(pin_result["simulation_result"][!,"is_oscillatory"])
-            println("Oscillatory: $oscillatory, Samples $samples")
+            if verbose
+                println("Oscillatory: $oscillatory, Samples $samples")
+            end
             hit_rate = oscillatory / samples
             trial += 1
         end

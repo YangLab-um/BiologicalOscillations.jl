@@ -12,7 +12,7 @@ export generate_parameter_sets, equilibrate_ODEs, simulate_ODEs, calculate_simul
 export calculate_main_frequency, calculate_amplitude, is_ODE_oscillatory
 # Protein interaction network
 export protein_interaction_network, pin_parameters, pin_timescale, pin_parameter_sets
-export pin_equilibration_times, find_pin_oscillations
+export pin_equilibration_times, find_pin_oscillations, pin_nodes_edges
 export pin_hit_rate
 # Gene regulatory network
 export gene_regulatory_network, grn_parameters, grn_timescale, grn_parameter_sets
