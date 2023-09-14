@@ -1,6 +1,6 @@
 /Manifest.toml
 docs/build/
 dev/
-scripts/
+base_scripts/
 .vscode/
 results_analyses/

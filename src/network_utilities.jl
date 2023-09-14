@@ -194,9 +194,11 @@ function count_inputs_by_coherence(connectivity::AbstractMatrix)
     # Go through each row
     for row in eachrow(connectivity)
         node_coherence = calculate_node_coherence(row)
-
-        input_counts.coherent .+= node_coherence.coherent
-        input_counts.incoherent .+= node_coherence.incoherent
+        if node_coherence == "coherent"
+            input_counts.coherent .+= 1
+        elseif node_coherence == "incoherent"
+            input_counts.incoherent .+= 1
+        end
     end
     return input_counts
 end
@@ -230,103 +232,25 @@ end
 """
     calculate_node_coherence(node_inputs::AbstractVector)
 
-    Returns the coherence of a node given its inputs as a DataFrame
+    Returns the coherence of a node given its inputs. A coherent node has all inputs with the same sign. An incoherent node has at least one input with a different sign.
 
 # Arguments (Required)
 - `node_inputs::AbstractVector`: Vector containing the inputs of a node
 
 # Returns
-- `coherence::DataFrame`: DataFrame containing the coherence of a node
+- `coherence::String`: Coherence of a node. Either "coherent", "incoherent" or "unknown"
 """
 function calculate_node_coherence(node_inputs::AbstractArray)
+    coherence = "unknown"
+
     n_positive = sum(node_inputs .== 1)
     n_negative = sum(node_inputs .== -1)
 
-    incoherent = min(n_positive, n_negative)
-    coherent = (max(n_positive, n_negative) - incoherent) / 2
-    coherent = floor(Int, coherent)
+    if n_positive == 0 && n_negative > 1 || n_positive > 1 && n_negative == 0
+        coherence = "coherent"
+    elseif n_positive > 0 && n_negative > 0
+        coherence = "incoherent"
+    end
 
-    coherence = DataFrame(coherent = coherent, incoherent = incoherent)
     return coherence
-end
-
-
-"""
-    calculate_loop_length_and_type(connectivity::AbstractMatrix, loop_start::AbstractVector)
-
-    Returns the length and type of a feedback loop given its start node.
-
-# Arguments (Required)
-- `connectivity::AbstractMatrix`: Connectivity matrix of a network
-- `loop_start::AbstractVector`: Vector containing the coordinates of the start node of a feedback loop
-
-# Returns
-- `loop_properties::DataFrame`: DataFrame containing the length and type of a feedback loop
-"""
-function calculate_loop_length_and_type(connectivity::AbstractMatrix, loop_start::AbstractVector)
-    nodes = size(connectivity, 1)
-    feedback_sign = connectivity[loop_start...]
-    loop_length = 1
-    loop_type = "unknown"
-    initial_node = loop_start[1]
-    current_node = loop_start[2]
-    next_node = loop_start[2]
-    # Backtrace the loop
-    iterations = 0
-    while next_node != initial_node
-        current_node = next_node
-        next_node = findall(connectivity[next_node, :] .!= 0)[1]
-        feedback_sign *= connectivity[current_node, next_node]
-        loop_length += 1
-        iterations += 1
-        if iterations > nodes
-            error("Loop length is larger than the number of nodes")
-        end
-    end
-
-    if feedback_sign == 1
-        loop_type = "positive"
-    elseif feedback_sign == -1
-        loop_type = "negative"
-    end
-    loop_properties = DataFrame(length = loop_length, type = loop_type)
-    return loop_properties
-end
-
-
-"""
-    classify_single_addition(reference_connectivity::AbstractMatrix, one_added_connectivity::AbstractMatrix)
-
-    Returns the coherence and feedback loop type of a single addition to a reference network.
-
-# Arguments (Required)
-- `reference_connectivity::AbstractMatrix`: Connectivity matrix used as a reference for comparison
-- `one_added_connectivity::AbstractMatrix`: Connectivity matrix with one addition with respect to the reference connectivity
-
-# Returns
-- `addition_properties::DataFrame`: DataFrame containing the coherence and feedback loop type of a single addition to a reference network
-"""
-function classify_single_addition(reference_connectivity::AbstractMatrix, one_added_connectivity::AbstractMatrix)
-    # Check that the reference connectivity is a negative feedback network
-    if !is_negative_feedback_network(reference_connectivity)
-        error("Reference connectivity should be a negative feedback network")
-    end
-    added_edge_indices = findall(reference_connectivity .!= one_added_connectivity)[1]
-    loop_start = [added_edge_indices[1], added_edge_indices[2]]
-    loop_properties = calculate_loop_length_and_type(one_added_connectivity, loop_start)
-
-    node_inputs = one_added_connectivity[added_edge_indices[1], :]
-    node_coherence = calculate_node_coherence(node_inputs)
-    if node_coherence.coherent[1] == 1 && node_coherence.incoherent[1] == 0
-        loop_coherence = "coherent"
-    elseif node_coherence.incoherent[1] == 1 && node_coherence.coherent[1] == 0
-        loop_coherence = "incoherent"
-    else
-        loop_coherence = "unknown"
-    end
-
-    addition_properties = DataFrame(loop_coherence = loop_coherence, 
-                                    loop_length = loop_properties.length, 
-                                    loop_type = loop_properties.type)
-    return addition_properties
 end

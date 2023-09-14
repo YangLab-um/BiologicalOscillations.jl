@@ -183,103 +183,30 @@ for network in non_nf_networks
 end
 
 # Test node_coherence
+node_inputs = [0 0 0 0 0 0]
+node_coherence = calculate_node_coherence(node_inputs)
+@test node_coherence == "unknown"
+
 node_inputs = [0 0 1 -1 0 0]
 node_coherence = calculate_node_coherence(node_inputs)
-@test node_coherence.coherent[1] == 0
-@test node_coherence.incoherent[1] == 1
+@test node_coherence == "incoherent"
 
 node_inputs = [0 0 1 -1 0 1]
 node_coherence = calculate_node_coherence(node_inputs)
-@test node_coherence.coherent[1] == 0
-@test node_coherence.incoherent[1] == 1
+@test node_coherence == "incoherent"
 
 node_inputs = [1 0 1 -1 0 1]
 node_coherence = calculate_node_coherence(node_inputs)
-@test node_coherence.coherent[1] == 1
-@test node_coherence.incoherent[1] == 1
+@test node_coherence == "incoherent"
 
 node_inputs = [1 0 1 1 0 1]
 node_coherence = calculate_node_coherence(node_inputs)
-@test node_coherence.coherent[1] == 2
-@test node_coherence.incoherent[1] == 0
+@test node_coherence == "coherent"
 
 node_inputs = [1 -1 1 1 -1 1]
 node_coherence = calculate_node_coherence(node_inputs)
-@test node_coherence.coherent[1] == 1
-@test node_coherence.incoherent[1] == 2
+@test node_coherence == "incoherent"
 
 node_inputs = [0 0 1 0 0 0]
 node_coherence = calculate_node_coherence(node_inputs)
-node_coherence = calculate_node_coherence(node_inputs)
-@test node_coherence.coherent[1] == 0
-@test node_coherence.incoherent[1] == 0
-
-# Test calculate_loop_length_and_type
-connectivity = [0 0 0 1 -1;-1 0 0 0 0;0 -1 0 0 0;0 0 -1 0 0;0 0 0 -1 0]
-loop_start = [1, 4]
-loop_properties = calculate_loop_length_and_type(connectivity, loop_start)
-@test loop_properties.length[1] == 4
-@test loop_properties.type[1] == "negative"
-
-connectivity = [1 0 0 0 -1;-1 0 0 0 0;0 -1 0 0 0;0 0 -1 0 0;0 0 0 -1 0]
-loop_start = [1, 1]
-loop_properties = calculate_loop_length_and_type(connectivity, loop_start)
-@test loop_properties.length[1] == 1
-@test loop_properties.type[1] == "positive"
-
-connectivity = [0 0 0 0 -1;-1 0 0 1 0;0 -1 0 0 0;0 0 -1 0 0;0 0 0 -1 0]
-loop_start = [2, 4]
-loop_properties = calculate_loop_length_and_type(connectivity, loop_start)
-@test loop_properties.length[1] == 3
-@test loop_properties.type[1] == "positive"
-
-connectivity = [0 0 0 0 -1;-1 0 0 0 0;0 -1 0 1 0;0 0 -1 0 0;0 0 0 -1 0]
-loop_start = [3, 4]
-loop_properties = calculate_loop_length_and_type(connectivity, loop_start)
-@test loop_properties.length[1] == 2
-@test loop_properties.type[1] == "negative"
-
-
-connectivity = [0 0 0 0 -1;-1 0 0 0 0;0 -1 0 -1 0;0 0 -1 0 0;0 0 0 -1 0]
-loop_start = [3, 4]
-loop_properties = calculate_loop_length_and_type(connectivity, loop_start)
-@test loop_properties.length[1] == 2
-@test loop_properties.type[1] == "positive"
-
-# Test classify_single_addition
-reference_connectivity = [0 0 -1;-1 0 0;0 -1 0]
-one_add_connectivity = [1 0 -1;-1 0 0;0 -1 0]
-addition_properties = classify_single_addition(reference_connectivity, one_add_connectivity)
-@test addition_properties.loop_type[1] == "positive"
-@test addition_properties.loop_length[1] == 1
-@test addition_properties.loop_coherence[1] == "incoherent"
-
-one_add_connectivity = [-1 0 -1;-1 0 0;0 -1 0]
-addition_properties = classify_single_addition(reference_connectivity, one_add_connectivity)
-@test addition_properties.loop_type[1] == "negative"
-@test addition_properties.loop_length[1] == 1
-@test addition_properties.loop_coherence[1] == "coherent"
-
-one_add_connectivity = [0 1 -1;-1 0 0;0 -1 0]
-addition_properties = classify_single_addition(reference_connectivity, one_add_connectivity)
-@test addition_properties.loop_type[1] == "negative"
-@test addition_properties.loop_length[1] == 2
-@test addition_properties.loop_coherence[1] == "incoherent"
-
-one_add_connectivity = [0 -1 -1;-1 0 0;0 -1 0]
-addition_properties = classify_single_addition(reference_connectivity, one_add_connectivity)
-@test addition_properties.loop_type[1] == "positive"
-@test addition_properties.loop_length[1] == 2
-@test addition_properties.loop_coherence[1] == "coherent"
-
-reference_connectivity = [0 0 0 0 -1;-1 0 0 0 0;0 -1 0 0 0;0 0 -1 0 0;0 0 0 -1 0]
-one_add_connectivity = [0 0 0 1 -1;-1 0 0 0 0;0 -1 0 0 0;0 0 -1 0 0;0 0 0 -1 0]
-addition_properties = classify_single_addition(reference_connectivity, one_add_connectivity)
-@test addition_properties.loop_type[1] == "negative"
-@test addition_properties.loop_length[1] == 4
-@test addition_properties.loop_coherence[1] == "incoherent"
-
-# catch error
-reference_connectivity_not_nf = [0 0 -1;-1 0 0; 0 -1 1]
-one_add_connectivity = [1 0 -1;-1 0 0;0 -1 0]
-@test_throws ErrorException classify_single_addition(reference_connectivity_not_nf, one_add_connectivity)
+@test node_coherence == "unknown"
