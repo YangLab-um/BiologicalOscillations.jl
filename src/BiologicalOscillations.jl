@@ -18,7 +18,8 @@ export pin_hit_rate
 export gene_regulatory_network, grn_parameters, grn_timescale, grn_parameter_sets
 export grn_equilibration_times, find_grn_oscillations
 # Network utilities
-export network_permutations, is_same_network, all_network_additions, unique_network_additions, unique_negative_feedback_networks
+export network_permutations, is_same_network, is_directed_cycle_graph, is_same_set_of_networks, all_network_additions, unique_network_additions, unique_negative_feedback_networks, unique_cycle_addition
+export connectivity_to_binary, find_all_binary_circular_permutations, binary_to_connectivity
 # Default hyperparameters
 export DEFAULT_PIN_HYPERPARAMETERS, DEFAULT_PIN_PARAMETER_LIMITS, DEFAULT_PIN_SAMPLING_SCALES
 export DEFAULT_GRN_HYPERPARAMETERS, DEFAULT_GRN_PARAMETER_LIMITS, DEFAULT_GRN_SAMPLING_SCALES
