@@ -19,8 +19,10 @@ export gene_regulatory_network, grn_parameters, grn_timescale, grn_parameter_set
 export grn_equilibration_times, find_grn_oscillations
 # Network utilities
 export network_permutations, is_same_network, all_network_additions, unique_network_additions
+export is_directed_cycle_graph, is_same_set_of_networks, unique_cycle_addition
 export unique_negative_feedback_networks, count_inputs_by_coherence, is_negative_feedback_network
-export calculate_node_coherence, calculate_loop_length_and_type, classify_single_addition
+export connectivity_to_binary, find_all_binary_circular_permutations, binary_to_connectivity
+export calculate_node_coherence
 # User input handling
 export is_valid_connectivity, connectivity_string_to_matrix
 
