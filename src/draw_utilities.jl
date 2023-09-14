@@ -1,5 +1,5 @@
 draw_default_config = Dict(
-    :output => "luxor-drawing-$(Dates.format(Dates.now(), "HHMMSS_s")).png",
+    :output => nothing,
     :scale => 100.0,
     :line_width => 2.0,
     :line_color => [0, 0, 0],
@@ -320,7 +320,11 @@ function draw_connectivity(connectivity::AbstractMatrix; coherent_nodes::Abstrac
     draw_config = merge(draw_default_config, Dict(kwargs))
 
     output = draw_config[:output]
-    ext = lowercase(splitext(output)[end])
+    if isnothing(output)
+        ext = ""
+    else
+        ext = lowercase(splitext(output)[end])
+    end
 
     scaled_size = draw_config[:relative_canvas_size] * draw_config[:scale]
 
@@ -376,7 +380,15 @@ function draw_connectivity(connectivity::AbstractMatrix; coherent_nodes::Abstrac
         end
     end
 
-    if ext == ".png"
+    if ext == ""
+        image = @imagematrix begin
+            background("white")
+            # imagematrix draws on black backgrounds by default
+            draw()
+        end scaled_size scaled_size
+
+        return image
+    elseif ext == ".png"
         @png begin
             draw()
         end scaled_size scaled_size output
