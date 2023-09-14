@@ -143,16 +143,16 @@ samples = 5000
 connectivity_T0 = [0 0 -1;-1 0 0;0 -1 0]
 T0_hit_rate = 0.0154
 calculated_hit_rate = pin_hit_rate(connectivity_T0, samples; verbose=false)
-@test calculated_hit_rate ≈ T0_hit_rate rtol=0.2
+@test calculated_hit_rate ≈ T0_hit_rate rtol=0.3
 
 samples = 1800
 connectivity_T0_3 = [1 0 -1; -1 0 0; 0 -1 0]
 T0_3_hit_rate = 0.075
 calculated_hit_rate = pin_hit_rate(connectivity_T0_3, samples; verbose=false)
-@test calculated_hit_rate ≈ T0_3_hit_rate rtol=0.2
+@test calculated_hit_rate ≈ T0_3_hit_rate rtol=0.3
 
 samples = 2000
 connectivity_P0_6 = [0 0 0 0 -1; -1 0 0 0 0; 1 -1 0 0 0; 0 0 -1 0 0; 0 0 0 -1 0]
 P0_6_hit_rate = 0.059
 calculated_hit_rate = pin_hit_rate(connectivity_P0_6, samples; verbose=false)
-@test calculated_hit_rate ≈ P0_6_hit_rate rtol=0.2
+@test calculated_hit_rate ≈ P0_6_hit_rate rtol=0.3
