@@ -2,7 +2,7 @@ module BiologicalOscillations
 
 using Catalyst, DifferentialEquations, ModelingToolkit, Latexify
 using Statistics, DSP, Peaks, LatinHypercubeSampling, DataFrames
-using Combinatorics
+using Combinatorics, Luxor, Images, FileIO
 
 # Models
 export elowitz_2000, guan_2008
@@ -20,6 +20,8 @@ export grn_equilibration_times, find_grn_oscillations
 # Network utilities
 export network_permutations, is_same_network, is_directed_cycle_graph, is_same_set_of_networks, all_network_additions, unique_network_additions, unique_negative_feedback_networks, unique_cycle_addition
 export connectivity_to_binary, find_all_binary_circular_permutations, binary_to_connectivity
+# Visualization utilities
+export draw_connectivity
 
 include("models.jl")
 include("simulation.jl")
@@ -28,5 +30,6 @@ include("user_input_handling.jl")
 include("feature_calculation.jl")
 include("gene_regulatory_network.jl")
 include("protein_interaction_network.jl")
+include("draw_utilities.jl")
 
 end
