@@ -220,7 +220,7 @@ end
 
 
 """
-    find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; initial_conditions=NaN)
+    find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
 
 Finds oscillatory parameter sets in a protein interaction network
 
@@ -229,7 +229,7 @@ Finds oscillatory parameter sets in a protein interaction network
 - `samples::Int`: Number of parameter sets to test
 
 # Arguments (Optional)
-- `initial_conditions::AbstractVector`: Initial conditions for the ODEs provided as a vector of vectors. If not specified, the initial conditions are set to 0.5 for all variables. 
+- `hyperparameters::Dict`: Dictionary of hyperparameters for the algorithm. Default values are defined in [`DEFAULT_PIN_HYPERPARAMETERS`](@ref).
 
 # Returns
 - `pin_result::Dict`: A dictionary containing the results of the oscillatory parameter set search. Output is encoded as:
@@ -240,25 +240,53 @@ pin_result = Dict("model" => "ReactionSystem of the protein interaction network"
                   "simulation_result" => "Dataframe containing result metrics for the simulated parameter sets",)
 ```
 """
-function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; initial_conditions=NaN)
+function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
+    # Unpack hyperparameters
+    initial_conditions = hyperparameters["initial_conditions"]
+    dimensionless_time = hyperparameters["dimensionless_time"]
+    parameter_limits = hyperparameters["parameter_limits"]
+    sampling_scales = hyperparameters["sampling_scales"]
+    sampling_style = hyperparameters["sampling_style"]
+    equilibration_time_multiplier = hyperparameters["equilibration_time_multiplier"]
+    solver = hyperparameters["solver"]
+    abstol = hyperparameters["abstol"]
+    reltol = hyperparameters["reltol"]
+    maxiters = hyperparameters["maxiters"]
+    simulation_time_multiplier = hyperparameters["simulation_time_multiplier"]
+    fft_multiplier = hyperparameters["fft_multiplier"]
+    freq_variation_threshold = hyperparameters["freq_variation_threshold"]
+    power_threshold = hyperparameters["power_threshold"]
+    amp_variation_threshold = hyperparameters["amp_variation_threshold"]
+
     model = protein_interaction_network(connectivity)
     N = length(species(model))
-    parameter_sets = pin_parameter_sets(model, samples)
-    equilibration_times = pin_equilibration_times(model, parameter_sets)
+    parameter_sets = pin_parameter_sets(model, samples; 
+                                        dimensionless_time=dimensionless_time, 
+                                        parameter_limits=parameter_limits, 
+                                        sampling_scales=sampling_scales, 
+                                        sampling_style=sampling_style)
+    equilibration_times = pin_equilibration_times(model, parameter_sets; 
+                                                  equilibration_time_multiplier=equilibration_time_multiplier)
     if isnan(initial_conditions)
         initial_conditions = [0.5*ones(N) for i=1:samples]
-    end
+    end 
     # Equilibrate
-    equilibration_data = equilibrate_ODEs(model, parameter_sets, initial_conditions, equilibration_times)
+    equilibration_data = equilibrate_ODEs(model, parameter_sets, initial_conditions, equilibration_times;
+                                          solver=solver, abstol=abstol, reltol=reltol, maxiters=maxiters)
     # Filter out solutions with velocity vector smaller than the mean velocity obtained from the equilibration
     velocity = equilibration_data["final_velocity"]
     cutoff = 10 ^ mean(log10.(velocity))
     filter = velocity .> cutoff
-    simulation_times = calculate_simulation_times(equilibration_data, equilibration_times)
+    simulation_times = calculate_simulation_times(equilibration_data, equilibration_times;
+                                                  simulation_time_multiplier=simulation_time_multiplier)
     # Simulate
-    simulation_data = simulate_ODEs(model, parameter_sets[filter,:], equilibration_data["final_state"][filter], simulation_times[filter])
+    simulation_data = simulate_ODEs(model, parameter_sets[filter,:], equilibration_data["final_state"][filter], simulation_times[filter];
+                                    solver=solver, abstol=abstol, reltol=reltol, maxiters=maxiters, fft_multiplier=fft_multiplier)
     # Check for oscillations
-    oscillatory_status = calculate_oscillatory_status(simulation_data)
+    oscillatory_status = calculate_oscillatory_status(simulation_data; 
+                                                      freq_variation_threshold=freq_variation_threshold, 
+                                                      power_threshold=power_threshold, 
+                                                      amp_variation_threshold=amp_variation_threshold)
 
     # Create a dataframe with the parameter sets
     parameter_map = paramsmap(model)
@@ -316,7 +344,7 @@ end
 
 
 """
-    pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target_oscillations::Int=100, max_samples::Int=1000000, max_trials::Int=5)
+    pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target_oscillations::Int=100, max_samples::Int=1000000, max_trials::Int=5, hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
 
 Estimates the hit rate of the oscillatory parameter set search in a protein interaction network
 
@@ -328,14 +356,18 @@ Estimates the hit rate of the oscillatory parameter set search in a protein inte
 - `target_oscillations::Int`: Target number of oscillatory parameter sets
 - `max_samples::Int`: Maximum number of samples allowed
 - `max_trials::Int`: Maximum number of trials allowed
+- `hyperparameters::Dict`: Dictionary of hyperparameters for the algorithm. Default values are defined in [`DEFAULT_PIN_HYPERPARAMETERS`](@ref).
+- `verbose::Bool`: Whether to print the number of oscillatory parameter sets found in each trial. Default value is `true`.
 
 # Returns
 - `hit_rate::Real`: Estimated hit rate
 """
-function pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target_oscillations::Int=100, max_samples::Int=1000000, max_trials::Int=5)
-    pin_result = find_pin_oscillations(connectivity, initial_samples)
+function pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target_oscillations::Int=100, max_samples::Int=1000000, max_trials::Int=5, hyperparameters=DEFAULT_PIN_HYPERPARAMETERS, verbose=true)
+    pin_result = find_pin_oscillations(connectivity, initial_samples, hyperparameters=hyperparameters)
     oscillatory = sum(pin_result["simulation_result"][!,"is_oscillatory"])
-    println("Oscillatory: $oscillatory, Samples $initial_samples")
+    if verbose
+        println("Oscillatory: $oscillatory, Samples $initial_samples")
+    end
     hit_rate =  oscillatory / initial_samples
 
     if oscillatory > target_oscillations
@@ -349,9 +381,11 @@ function pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target
             else
                 samples = ceil(Int, samples * (target_oscillations + 10) / oscillatory)
             end
-            pin_result = find_pin_oscillations(connectivity, samples)
+            pin_result = find_pin_oscillations(connectivity, samples, hyperparameters=hyperparameters)
             oscillatory = sum(pin_result["simulation_result"][!,"is_oscillatory"])
-            println("Oscillatory: $oscillatory, Samples $samples")
+            if verbose
+                println("Oscillatory: $oscillatory, Samples $samples")
+            end
             hit_rate = oscillatory / samples
             trial += 1
         end

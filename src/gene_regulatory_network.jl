@@ -242,7 +242,7 @@ Find oscillatory parameter sets in a gene regulatory network.
 - `samples::Int`: Number of parameter sets to test
 
 # Arguments (Optional)
-- `initial_conditions::AbstractVector=NaN`: Initial conditions for the ODEs. If not provided, the initial conditions are set to 0.5 for all variables.
+- `hyperparameters::Dict`: Dictionary of hyperparameters for the algorithm. Default values are defined in [`DEFAULT_GRN_HYPERPARAMETERS`](@ref).
 
 # Returns
 - `pin_result::Dict`: A ditionary containing the results of the oscillatory parameter set search. Output is encoded as:
@@ -253,25 +253,53 @@ pin_result = Dict("model" => "ReactionSystem of the gene regulatory network",
                   "simulation_result" => "Dataframe containing result metrics for the simulated parameter sets",)
 ```
 """
-function find_grn_oscillations(connectivity::AbstractMatrix, samples::Int; initial_conditions=NaN)
+function find_grn_oscillations(connectivity::AbstractMatrix, samples::Int; hyperparameters=DEFAULT_GRN_HYPERPARAMETERS)
+    # Unpack hyperparameters
+    initial_conditions = hyperparameters["initial_conditions"]
+    dimensionless_time = hyperparameters["dimensionless_time"]
+    parameter_limits = hyperparameters["parameter_limits"]
+    sampling_scales = hyperparameters["sampling_scales"]
+    sampling_style = hyperparameters["sampling_style"]
+    equilibration_time_multiplier = hyperparameters["equilibration_time_multiplier"]
+    solver = hyperparameters["solver"]
+    abstol = hyperparameters["abstol"]
+    reltol = hyperparameters["reltol"]
+    maxiters = hyperparameters["maxiters"]
+    simulation_time_multiplier = hyperparameters["simulation_time_multiplier"]
+    fft_multiplier = hyperparameters["fft_multiplier"]
+    freq_variation_threshold = hyperparameters["freq_variation_threshold"]
+    power_threshold = hyperparameters["power_threshold"]
+    amp_variation_threshold = hyperparameters["amp_variation_threshold"]
+
     model = gene_regulatory_network(connectivity)
     N = length(species(model))
-    parameter_sets = grn_parameter_sets(model, samples)
-    equilibration_times = grn_equilibration_times(model, parameter_sets)
+    parameter_sets = grn_parameter_sets(model, samples;
+                                        dimensionless_time=dimensionless_time,
+                                        parameter_limits=parameter_limits,
+                                        sampling_scales=sampling_scales,
+                                        sampling_style=sampling_style)
+    equilibration_times = grn_equilibration_times(model, parameter_sets;
+                                                  equilibration_time_multiplier=equilibration_time_multiplier)
     if isnan(initial_conditions)
         initial_conditions = [10.0*ones(N) for i=1:samples]
     end
     # Equilibrate
-    equilibration_data = equilibrate_ODEs(model, parameter_sets, initial_conditions, equilibration_times)
+    equilibration_data = equilibrate_ODEs(model, parameter_sets, initial_conditions, equilibration_times;
+                                          solver=solver, abstol=abstol, reltol=reltol, maxiters=maxiters)
     # Filter out solutions with velocity vector smaller than the mean velocity obtained from the equilibration
     velocity = equilibration_data["final_velocity"]
     cutoff = 10 ^ mean(log10.(velocity))
     filter = velocity .> cutoff
-    simulation_times = calculate_simulation_times(equilibration_data, equilibration_times)
+    simulation_times = calculate_simulation_times(equilibration_data, equilibration_times;
+                                                  simulation_time_multiplier=simulation_time_multiplier)
     # Simulate
-    simulation_data = simulate_ODEs(model, parameter_sets[filter,:], equilibration_data["final_state"][filter], simulation_times[filter])
+    simulation_data = simulate_ODEs(model, parameter_sets[filter,:], equilibration_data["final_state"][filter], simulation_times[filter];
+                                    solver=solver, abstol=abstol, reltol=reltol, maxiters=maxiters, fft_multiplier=fft_multiplier)
     # Check for oscillations
-    oscillatory_status = calculate_oscillatory_status(simulation_data)
+    oscillatory_status = calculate_oscillatory_status(simulation_data;
+                                                      freq_variation_threshold=freq_variation_threshold,
+                                                      power_threshold=power_threshold,
+                                                      amp_variation_threshold=amp_variation_threshold)
 
     # Create a dataframe with the parameter sets
     parameter_map = paramsmap(model)
@@ -328,3 +356,47 @@ function find_grn_oscillations(connectivity::AbstractMatrix, samples::Int; initi
 end
 
 
+"""
+    grn_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target_oscillations::Int=100, max_samples::Int=1000000, max_trials::Int=5, hyperparameters=DEFAULT_GRN_HYPERPARAMETERS)
+
+Estimates the hit rate of the oscillatory parameter set search in a gene regulatory network.
+
+# Arguments (Required)
+- `connectivity::AbstractMatrix`: Connectivity matrix of the gene regulatory network
+- `initial_samples::Int`: Number of parameter sets to sample in the first trial
+
+# Arguments (Optional)
+- `target_oscillations::Int`: Target number of oscillatory parameter sets
+- `max_samples::Int`: Maximum number of samples allowed
+- `max_trials::Int`: Maximum number of trials allowed
+- `hyperparameters::Dict`: Dictionary of hyperparameters for the algorithm. Default values are defined in [`DEFAULT_GRN_HYPERPARAMETERS`](@ref).
+
+# Returns
+- `hit_rate::Real`: Estimated hit rate
+"""
+function grn_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target_oscillations::Int=100, max_samples::Int=1000000, max_trials::Int=5, hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
+    grn_result = find_grn_oscillations(connectivity, initial_samples, hyperparameters=hyperparameters)
+    oscillatory = sum(grn_result["simulation_result"][!,"is_oscillatory"])
+    println("Oscillatory: $oscillatory, Samples $initial_samples")
+    hit_rate =  oscillatory / initial_samples
+
+    if oscillatory > target_oscillations
+        return hit_rate
+    else
+        samples = initial_samples
+        trial = 1
+        while oscillatory < target_oscillations && trial < max_trials && samples < max_samples
+            if oscillatory == 0
+                samples = 2*samples
+            else
+                samples = ceil(Int, samples * (target_oscillations + 10) / oscillatory)
+            end
+            grn_result = find_grn_oscillations(connectivity, samples, hyperparameters=hyperparameters)
+            oscillatory = sum(grn_result["simulation_result"][!,"is_oscillatory"])
+            println("Oscillatory: $oscillatory, Samples $samples")
+            hit_rate = oscillatory / samples
+            trial += 1
+        end
+        return hit_rate
+    end
+end
