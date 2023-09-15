@@ -40,6 +40,13 @@ end
 - `result::Bool`: True if any of the permutations of connectivity 1 is equal to any of the permutations of connectivity2. False otherwise.
 """
 function is_same_network(connectivity1::AbstractMatrix, connectivity2::AbstractMatrix)
+    if connectivity1 == connectivity2
+        return true
+    end
+    # If the sum of edges is different, then the networks are different
+    if sum(connectivity1) != sum(connectivity2)
+        return false
+    end
     permutations1 = network_permutations(connectivity1)
     permutations2 = network_permutations(connectivity2)
     # Compare permutations
@@ -165,7 +172,8 @@ function unique_network_additions(connectivity::AbstractMatrix, number_of_edges:
     all_additions = all_network_additions(connectivity, number_of_edges)
     # Remove duplicates
     for addition in all_additions
-        if !any(is_same_network(addition, c) for c in connectivity_vector)
+        comparison = [is_same_network(addition, c) for c in connectivity_vector]
+        if !any(comparison)
             push!(connectivity_vector, addition)
         end
     end
@@ -227,6 +235,33 @@ end
 
 
 """
+    count_inputs_by_coherence(connectivity::AbstractMatrix)
+
+    Returns the total number of coherent and incoherent inputs for a given network.
+
+# Arguments (Required)
+- `connectivity::AbstractMatrix`: Connectivity matrix of a network
+
+# Returns
+- `input_counts::DataFrame`: DataFrame containing the number of coherent and incoherent inputs for a given network
+"""
+function count_inputs_by_coherence(connectivity::AbstractMatrix)
+    # Initialize dataframe
+    input_counts = DataFrame(coherent = 0, incoherent = 0)
+    # Go through each row
+    for row in eachrow(connectivity)
+        node_coherence = calculate_node_coherence(row)
+        if node_coherence == "coherent"
+            input_counts.coherent .+= 1
+        elseif node_coherence == "incoherent"
+            input_counts.incoherent .+= 1
+        end
+    end
+    return input_counts
+end
+
+  
+ """
    connectivity_to_binary(connectivity::AbstractMatrix)
 
    Returns a binary representation of a circular network.
@@ -273,6 +308,30 @@ end
 
 
 """
+    is_negative_feedback_network(connectivity::AbstractMatrix)
+
+    Returns true if the network is a negative-feedback-only network. False otherwise.
+
+# Arguments (Required)
+- `connectivity::AbstractMatrix`: Connectivity matrix of a network
+
+# Returns
+- `result::Bool`: True if the network is a negative-feedback-only network. False otherwise.
+"""
+function is_negative_feedback_network(connectivity::AbstractMatrix)
+    non_zero_edges = connectivity[connectivity .!= 0]
+    # If the number of edges is larger than the number of nodes, then it is not a negative-feedback-only network
+    if sum(abs.(non_zero_edges)) > size(connectivity, 1)
+        return false
+    # If the product of the edges is non-negative, then it is not a negative-feedback-only network
+    elseif prod(non_zero_edges) >= 0
+        return false
+    else
+        return true
+    end
+end
+    
+ """
    find_all_binary_circular_permutations(feedback_loop_in_binary::String)
 
    Returns a vector containing all unique circular permutations of a given binary representation.
@@ -309,6 +368,33 @@ function binary_to_connectivity(feedback_loop_in_binary::String)
     end
 
     return connectivity
+end
+
+
+"""
+    calculate_node_coherence(node_inputs::AbstractVector)
+
+    Returns the coherence of a node given its inputs. A coherent node has all inputs with the same sign. An incoherent node has at least one input with a different sign.
+
+# Arguments (Required)
+- `node_inputs::AbstractVector`: Vector containing the inputs of a node
+
+# Returns
+- `coherence::String`: Coherence of a node. Either "coherent", "incoherent" or "unknown"
+"""
+function calculate_node_coherence(node_inputs::AbstractArray)
+    coherence = "unknown"
+
+    n_positive = sum(node_inputs .== 1)
+    n_negative = sum(node_inputs .== -1)
+
+    if n_positive == 0 && n_negative > 1 || n_positive > 1 && n_negative == 0
+        coherence = "coherent"
+    elseif n_positive > 0 && n_negative > 0
+        coherence = "incoherent"
+    end
+
+    return coherence
 end
 
 

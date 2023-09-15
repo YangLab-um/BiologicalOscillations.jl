@@ -1,6 +1,14 @@
 using BiologicalOscillations
 
-# Test that the correct network permutations are generated
+# Test `network_permutations`
+## 2 nodes
+true_permutations = [
+    [0 1; 2 0],
+    [0 2; 1 0],
+]
+calculated_permutations = network_permutations([0 1; 2 0])
+@test true_permutations == calculated_permutations
+## 3 nodes
 true_permutations = [
     [0 0 1; 2 0 0; 0 3 0],
     [0 1 0; 0 0 3; 2 0 0],
@@ -104,6 +112,104 @@ calculated_unique_6_nodes = unique_negative_feedback_networks(6)
 for network in true_unique_6_nodes
     @test any([is_same_network(network, calculated_network) for calculated_network in calculated_unique_6_nodes])
 end
+
+# Test the count_inputs_by_coherence function
+connectivity = [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 -1 0 0 0 0; 0 0 -1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 -1 0]
+input_counts = count_inputs_by_coherence(connectivity)
+@test input_counts.coherent[1] == 0
+@test input_counts.incoherent[1] == 0
+
+connectivity = [0 1 1;1 0 0;0 -1 1]
+input_counts = count_inputs_by_coherence(connectivity)
+@test input_counts.coherent[1] == 1
+@test input_counts.incoherent[1] == 1
+
+connectivity = [-1 1 1;1 1 1;-1 1 1]
+input_counts = count_inputs_by_coherence(connectivity)
+@test input_counts.coherent[1] == 1
+@test input_counts.incoherent[1] == 2
+
+# Test is_negative_feedback_network
+nf_networks = [
+    [0 0 -1; -1 0 0; 0 -1 0],
+    [0 0 1; 1 0 0; 0 -1 0],
+    [0 0 0 -1; 1 0 0 0; 0 -1 0 0; 0 0 -1 0],
+    [0 0 0 -1; 1 0 0 0; 0 1 0 0; 0 0 1 0],
+    [0 0 0 0 -1; -1 0 0 0 0; 0 -1 0 0 0; 0 0 -1 0 0; 0 0 0 -1 0],
+    [0 0 0 0 -1; 1 0 0 0 0; 0 1 0 0 0; 0 0 -1 0 0; 0 0 0 -1 0],
+    [0 0 0 0 -1; 1 0 0 0 0; 0 -1 0 0 0; 0 0 1 0 0; 0 0 0 -1 0],
+    [0 0 0 0 -1; 1 0 0 0 0; 0 1 0 0 0; 0 0 1 0 0; 0 0 0 1 0],
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 -1 0 0 0 0; 0 0 -1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 -1 0],
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 -1 0],
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 -1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 -1 0],
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 -1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 1 0],
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 -1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 1 0],
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0],
+    [0 0 0 0 0 0 -1; -1 0 0 0 0 0 0; 0 -1 0 0 0 0 0; 0 0 -1 0 0 0 0; 0 0 0 -1 0 0 0; 0 0 0 0 -1 0 0; 0 0 0 0 0 -1 0],
+    [0 0 0 0 0 0 -1; 1 0 0 0 0 0 0; 0 1 0 0 0 0 0; 0 0 -1 0 0 0 0; 0 0 0 -1 0 0 0; 0 0 0 0 -1 0 0; 0 0 0 0 0 -1 0],
+    [0 0 0 0 0 0 -1; 1 0 0 0 0 0 0; 0 -1 0 0 0 0 0; 0 0 1 0 0 0 0; 0 0 0 -1 0 0 0; 0 0 0 0 -1 0 0; 0 0 0 0 0 -1 0],
+    [0 0 0 0 0 0 -1; 1 0 0 0 0 0 0; 0 -1 0 0 0 0 0; 0 0 -1 0 0 0 0; 0 0 0 1 0 0 0; 0 0 0 0 -1 0 0; 0 0 0 0 0 -1 0],
+    [0 0 0 0 0 0 -1; 1 0 0 0 0 0 0; 0 1 0 0 0 0 0; 0 0 1 0 0 0 0; 0 0 0 1 0 0 0; 0 0 0 0 -1 0 0; 0 0 0 0 0 -1 0],
+    [0 0 0 0 0 0 -1; 1 0 0 0 0 0 0; 0 -1 0 0 0 0 0; 0 0 1 0 0 0 0; 0 0 0 1 0 0 0; 0 0 0 0 1 0 0; 0 0 0 0 0 -1 0],
+    [0 0 0 0 0 0 -1; 1 0 0 0 0 0 0; 0 -1 0 0 0 0 0; 0 0 -1 0 0 0 0; 0 0 0 1 0 0 0; 0 0 0 0 1 0 0; 0 0 0 0 0 1 0],
+    [0 0 0 0 0 0 -1; 1 0 0 0 0 0 0; 0 1 0 0 0 0 0; 0 0 -1 0 0 0 0; 0 0 0 1 0 0 0; 0 0 0 0 1 0 0; 0 0 0 0 0 -1 0],
+    [0 0 0 0 0 0 -1; 1 0 0 0 0 0 0; 0 1 0 0 0 0 0; 0 0 -1 0 0 0 0; 0 0 0 1 0 0 0; 0 0 0 0 -1 0 0; 0 0 0 0 0 1 0],
+    [0 0 0 0 0 0 -1; 1 0 0 0 0 0 0; 0 1 0 0 0 0 0; 0 0 1 0 0 0 0; 0 0 0 1 0 0 0; 0 0 0 0 1 0 0; 0 0 0 0 0 1 0],
+]
+
+non_nf_networks = [
+    [0 0 1; -1 0 0; 0 -1 0],
+    [0 0 1; 1 0 0; 0 1 0],
+    [0 0 0 -1; 1 0 0 1; 0 -1 0 0; 0 0 -1 0],
+    [0 0 0 -1; 1 0 1 0; 1 1 0 0; 0 0 1 0],
+    [0 0 0 0 -1; -1 0 0 0 0; 0 0 0 0 0; 0 0 -1 0 0; 0 0 0 -1 0],
+    [0 0 0 0 -1; 1 0 0 0 0; 0 -1 0 0 0; 0 0 -1 0 0; 0 0 0 -1 0],
+    [0 0 0 0 -1; 1 0 0 0 0; 0 1 0 0 0; 0 0 1 0 0; 0 0 0 -1 0],
+    [0 0 0 0 -1; 1 0 0 0 0; 0 -1 0 0 0; 0 0 1 0 0; 0 0 0 1 0],
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 -1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 -1 0],
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 -1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 -1 0],
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 1 0 1 0 0; 0 0 -1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 -1 0],
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 1 0 0 1 0; 0 0 -1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 1 0],
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 -1 0 0 -1 0; 0 0 1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 1 0],
+    [0 0 0 0 0 -1; 1 0 0 0 0 0; 0 -1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0],
+]
+
+for network in nf_networks
+    @test is_negative_feedback_network(network) == true
+end
+
+for network in non_nf_networks
+    @test is_negative_feedback_network(network) == false
+end
+
+# Test node_coherence
+node_inputs = [0 0 0 0 0 0]
+node_coherence = calculate_node_coherence(node_inputs)
+@test node_coherence == "unknown"
+
+node_inputs = [0 0 1 -1 0 0]
+node_coherence = calculate_node_coherence(node_inputs)
+@test node_coherence == "incoherent"
+
+node_inputs = [0 0 1 -1 0 1]
+node_coherence = calculate_node_coherence(node_inputs)
+@test node_coherence == "incoherent"
+
+node_inputs = [1 0 1 -1 0 1]
+node_coherence = calculate_node_coherence(node_inputs)
+@test node_coherence == "incoherent"
+
+node_inputs = [1 0 1 1 0 1]
+node_coherence = calculate_node_coherence(node_inputs)
+@test node_coherence == "coherent"
+
+node_inputs = [1 -1 1 1 -1 1]
+node_coherence = calculate_node_coherence(node_inputs)
+@test node_coherence == "incoherent"
+
+node_inputs = [0 0 1 0 0 0]
+node_coherence = calculate_node_coherence(node_inputs)
+@test node_coherence == "unknown"
 
 # Test is_directed_cycle_graph function
 @test is_directed_cycle_graph([0 1 0; 0 0 1; 1 0 0])  # forward cycle
