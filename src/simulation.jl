@@ -190,23 +190,29 @@ end
 
 
 """
-    calculate_oscillatory_status(simulation_data::Dict)
+    calculate_oscillatory_status(simulation_data::Dict; freq_variation_threshold::Real=0.05, power_threshold::Real=1e-7, amp_variation_threshold::Real=0.05)
 
 Calculates the oscillatory status for each parameter set using the functionality of [`is_ODE_oscillatory`](@ref)
 
 # Arguments (Required)
 - `simulation_data::Dict`: Dictionary of simulation data generated with [`simulate_ODEs`](@ref)
+- `freq_variation_threshold::Real`: Maximum tolerated variation in frequency between species in the solution to be declared oscillatory.
+- `power_threshold::Real`: Minimum spectral power that the main peak has to have to be declared oscillatory.
+- `amp_variation_threshold::Real`: Maximum tolerated value for peak/trough variation to be declared oscillatory.
 
 # Returns
 - `oscillatory_status::Array{Bool}`: Boolean array indicating whether each parameter set is oscillatory or not.
 """
-function calculate_oscillatory_status(simulation_data::Dict)
+function calculate_oscillatory_status(simulation_data::Dict; freq_variation_threshold::Real=0.05, power_threshold::Real=1e-7, amp_variation_threshold::Real=0.05)
     oscillatory_status = Array{Bool}(undef, 0)
 
     for i in axes(simulation_data["frequency_data"], 1)
         freq = simulation_data["frequency_data"][i]
         amp = simulation_data["amplitude_data"][i]
-        decision = is_ODE_oscillatory(freq, amp)
+        decision = is_ODE_oscillatory(freq, amp; 
+                                      freq_variation_threshold=freq_variation_threshold, 
+                                      power_threshold=power_threshold, 
+                                      amp_variation_threshold=amp_variation_threshold)
         push!(oscillatory_status, decision)
     end
 
