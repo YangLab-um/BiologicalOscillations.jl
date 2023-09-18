@@ -431,3 +431,48 @@ function unique_cycle_addition(connectivity::AbstractMatrix)
 
     return connectivity_vector
 end
+
+
+"""
+   find_all_cycles_and_types(connectivity::AbstractMatrix)
+
+   Returns a vector containing all unique cycles in a connectivity matrix. Each cycle is represented by a vector of nonduplicate node indices that define a cycle.a vector containing all unique cycles that can be found in a connectivity matrix. For example, if a Goodwin oscillator with a self-loop ([1 0 1; 1 0 0; 0 -1 0]) is given as an input, vectors [[1], [1, 2, 3]] and ["positive", "negative"] will be returned.
+
+# Arguments (Required)
+- `connectivity::AbstractMatrix`: Connectivity matrix of a network
+
+# Returns
+- `all_cycles::AbstractVector`: Vector containing vectors of node indices
+- `all_types::AbstractVector`: Vector containing types of respective cycles in `all_cycles`
+"""
+function find_all_cycles_and_types(connectivity::AbstractMatrix)
+    all_cycles = []
+    all_types = []
+    n = size(connectivity)[1]
+
+    # Following for statements iterate over all possible cycles in a complete directed graph (self-loops allowed) of the same size as the given graph
+    for cycle_length in 1:n
+        # Iterate over lengths of cycles
+        for c in combinations(1:n, cycle_length)
+            # With a given cycle length, iterate over possible combinations of nodes
+            for p in permutations(c[2:cycle_length])
+                # With a given combination of nodes, iterate over its all circular permutations
+
+                path_candidate = vcat(c[1], p, c[1])
+                # Note that the start (end) point of a cycle is repeated in the above list
+
+                index_start_node = path_candidate[1:end - 1]
+                index_end_node = path_candidate[2:end]
+
+                path_in_given_connectivity = connectivity[CartesianIndex.(index_end_node, index_start_node)]
+
+                if all(path_in_given_connectivity .!= 0)
+                    # When possible path exists in given connectivity
+                    push!(all_cycles, index_start_node)
+                    push!(all_types, (prod(path_in_given_connectivity) == 1 ? "positive" : "negative"))
+                end
+            end
+        end
+    end
+    return all_cycles, all_types
+end

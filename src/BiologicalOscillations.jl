@@ -22,7 +22,7 @@ export network_permutations, is_same_network, all_network_additions, unique_netw
 export is_directed_cycle_graph, is_same_set_of_networks, unique_cycle_addition
 export unique_negative_feedback_networks, count_inputs_by_coherence, is_negative_feedback_network
 export connectivity_to_binary, find_all_binary_circular_permutations, binary_to_connectivity
-export calculate_node_coherence
+export calculate_node_coherence, find_all_cycles_and_types
 # User input handling
 export is_valid_connectivity, connectivity_string_to_matrix
 # Default hyperparameters
