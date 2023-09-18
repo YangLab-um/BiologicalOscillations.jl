@@ -275,3 +275,29 @@ p2 = [0 0 0 0 -1; -1 0 0 0 0; 0 -1 0 0 0; 0 0 1 0 0; 0 0 0 1 0]
 @test is_same_set_of_networks(unique_network_additions(s1, 1), unique_cycle_addition(s1))
 @test is_same_set_of_networks(unique_network_additions(s3, 1), unique_cycle_addition(s3))
 @test is_same_set_of_networks(unique_network_additions(p2, 1), unique_cycle_addition(p2))
+
+# Test find_all_cycles_and_types. Note that the outputs of find_all_cycles_and_types are sorted by the cycle length (ascending order)
+connectivity = [0 0 0 1 -1;-1 0 0 0 0;0 -1 0 0 0;0 0 -1 0 0;0 0 0 -1 0]
+cycle, type = find_all_cycles_and_types(connectivity)
+@test cycle[1] == [1, 2, 3, 4]
+@test type[1] == "negative"
+
+connectivity = [1 0 0 0 -1;-1 0 0 0 0;0 -1 0 0 0;0 0 -1 0 0;0 0 0 -1 0]
+cycle, type = find_all_cycles_and_types(connectivity)
+@test cycle[1] == [1]
+@test type[1] == "positive"
+
+connectivity = [0 0 0 0 -1;-1 0 0 1 0;0 -1 0 0 0;0 0 -1 0 0;0 0 0 -1 0]
+cycle, type = find_all_cycles_and_types(connectivity)
+@test cycle[1] == [2, 3, 4]
+@test type[1] == "positive"
+
+connectivity = [0 0 0 0 -1;-1 0 0 0 0;0 -1 0 1 0;0 0 -1 0 0;0 0 0 -1 0]
+cycle, type = find_all_cycles_and_types(connectivity)
+@test cycle[1] == [3, 4]
+@test type[1] == "negative"
+
+connectivity = [0 0 0 0 -1;-1 0 0 0 0;0 -1 0 -1 0;0 0 -1 0 0;0 0 0 -1 0]
+cycle, type = find_all_cycles_and_types(connectivity)
+@test cycle[1] == [3, 4]
+@test type[1] == "positive"
