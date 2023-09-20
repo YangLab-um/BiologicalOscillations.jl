@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -16,8 +17,12 @@ Author: Franco Tavella
 Date: 09/19/2023
 """
 
-data_file = "Z:/Users/Franco/Simulations/T0_one_add/features/T0_1_features.csv"
-output_dir = '.'
+# Read data_file and output_dir as script arguments using sys
+if len(sys.argv) != 3:
+    raise Exception("Usage: python plot_period_amplitude_distribution.py <data_file> <output_dir>")
+else:
+    data_file = sys.argv[1]
+    output_dir = sys.argv[2]
 
 # Read in data
 df = pd.read_csv(data_file)
