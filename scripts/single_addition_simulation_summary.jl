@@ -112,11 +112,11 @@ for (idx, network_name) in enumerate(network_names)
         oscillatory_samples += oscillatory_solutions
     end
     # Process merged features
-    mean_logfreq = mean(log.(features_df[!, "Frequency"]))
+    mean_logfreq = mean(log10.(features_df[!, "Frequency"]))
     mean_amplitude = mean(features_df[!, "Amplitude"])
-    stdev_logfreq = std(log.(features_df[!, "Frequency"]))
+    stdev_logfreq = std(log10.(features_df[!, "Frequency"]))
     stdev_amplitude = std(features_df[!, "Amplitude"])
-    iqr_logfreq = iqr(log.(features_df[!, "Frequency"]))
+    iqr_logfreq = iqr(log10.(features_df[!, "Frequency"]))
     iqr_amplitude = iqr(features_df[!, "Amplitude"])
     # Oscillation probability
     oscillation_probability = oscillatory_samples / total_samples
