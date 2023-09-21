@@ -36,14 +36,14 @@ Date: 09/11/2023
 """
 
 # User-defined parameters
-network = "S3"
-# simulation_data_location = "E:/Project 2 - Tunability/ForkBiologicalOscillations.jl/results_analyses/$(network)_1_add/find_oscillations_result/$(network)/simulations"
-simulation_data_location = "H:/Franco/Project 2 - Tunability - Data/S3_simulation_result/simulations"
+network = "P0"
+simulation_data_location = "E:/Project 2 - Tunability/ForkBiologicalOscillations.jl/results_analyses/$(network)_1_add/find_oscillations_result/$(network)/simulations"
+# simulation_data_location = "H:/Franco/Project 2 - Tunability - Data/S3_simulation_result/simulations"
 connectivity_file_location = "E:/Project 2 - Tunability/ForkBiologicalOscillations.jl/results_analyses/$(network)_1_add/$(network)_1_add_connectivity_list.csv"
 save_path = "E:/Project 2 - Tunability/ForkBiologicalOscillations.jl/results_analyses/$(network)_1_add/"
 save_name = "$(network)_one_add_simulation_summary.csv"
-reference_connectivity = [0 0 0 -1; 1 0 0 0; 0 1 0 0; 0 0 1 0]
-is_full_simulation_data = false
+reference_connectivity = [0 0 0 0 -1; -1 0 0 0 0; 0 -1 0 0 0; 0 0 -1 0 0; 0 0 0 -1 0]
+is_full_simulation_data = true
 
 # Get list of network names and their repetitions
 network_names = readdir(simulation_data_location)
