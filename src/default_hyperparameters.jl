@@ -91,6 +91,7 @@ DEFAULT_PIN_SAMPLING_SCALES = Dict(
 Default hyperparameters for the various algorithms involved in the find_pin_oscillations pipeline.
 """
 DEFAULT_PIN_HYPERPARAMETERS = Dict(
+    "random_seed" => 1234, # Random seed used to generate parameter sets.
     "initial_conditions" => NaN, # Set of initial conditions for `find_pin_oscillations`. Size should be equal to the number of samples indicated. If NaN, all species are initialized at 0.5.
     "equilibration_time_multiplier" => 10, # Multiplier applied to the slowest timescale to determine the equilibration time in `pin_equilibration_times`.
     "dimensionless_time" => true, # Whether to use dimensionless time in `pin_parameter_sets`. If true, the α parameter of the first node is set to 1 for all parameter sets. If false, no changes are made to the parameter sets.
@@ -146,6 +147,7 @@ DEFAULT_GRN_SAMPLING_SCALES = Dict(
 Default hyperparameters for the various algorithms involved in the find_grn_oscillations pipeline.
 """
 DEFAULT_GRN_HYPERPARAMETERS = Dict(
+    "random_seed" => 1234, # Random seed used to generate parameter sets.
     "initial_conditions" => NaN,  # Set of initial conditions for `find_grn_oscillations`. Size should be equal to the number of samples indicated. If NaN, all species are initialized at 10.
     "equilibration_time_multiplier" => 10, # Multiplier applied to the slowest timescale to determine the equilibration time in `grn_equilibration_times`.
     "dimensionless_time" => true, # Whether to use dimensionless time in `grn_parameter_sets`. If true, the α parameter of the first node is set to 1 and the first N (N = number of nodes) κ are set to 1 for all parameter sets. If false, no changes are made to the parameter sets.

@@ -138,6 +138,7 @@ Creates an array of parameter sets for a protein interaction network model.
 # Arguments (Required)
 - `model::ReactionSystem`: Model generated with [`protein_interaction_network`](@ref)
 - `samples::Int`: Number of parameter sets to be generated
+- `random_seed::Int`: Random seed for the sampling algorithm
 
 # Arguments (Optional)
 - `dimensionless_time::Bool`: If `true`, α₁ is set to 1.0 for all parameter sets, making time dimensionless. Default value is `true`
@@ -152,7 +153,7 @@ sampling_scales = Dict("α" => "log", "β" => "log", "γ" => "log", "κ" => "lin
 ```
 - `sampling_style::String`: Sampling style of the algorithm. Accepted strings are "lhc" and "random". Default value is "lhc".
 """
-function pin_parameter_sets(model::ReactionSystem, samples::Int; dimensionless_time=true, parameter_limits=Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), "γ" => (1e2, 1e4), "κ" => (0.2, 1.0), "η" => (1.0, 5.0)), sampling_scales=Dict("α" => "log", "β" => "log", "γ" => "log", "κ" => "linear", "η" => "linear"), sampling_style="lhc")
+function pin_parameter_sets(model::ReactionSystem, samples::Int, random_seed::Int; dimensionless_time=true, parameter_limits=Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), "γ" => (1e2, 1e4), "κ" => (0.2, 1.0), "η" => (1.0, 5.0)), sampling_scales=Dict("α" => "log", "β" => "log", "γ" => "log", "κ" => "linear", "η" => "linear"), sampling_style="lhc")
     N, E = pin_nodes_edges(model)
 
     limits = []
@@ -177,7 +178,7 @@ function pin_parameter_sets(model::ReactionSystem, samples::Int; dimensionless_t
         push!(scales, sampling_scales["η"])
     end
 
-    parameter_array = generate_parameter_sets(samples, limits, scales; sampling_style=sampling_style)
+    parameter_array = generate_parameter_sets(samples, limits, scales, random_seed; sampling_style=sampling_style)
 
     if dimensionless_time
         parameter_array[:,1] .= 1.0
@@ -242,6 +243,7 @@ pin_result = Dict("model" => "ReactionSystem of the protein interaction network"
 """
 function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
     # Unpack hyperparameters
+    random_seed = hyperparameters["random_seed"]
     initial_conditions = hyperparameters["initial_conditions"]
     dimensionless_time = hyperparameters["dimensionless_time"]
     parameter_limits = hyperparameters["parameter_limits"]
@@ -260,7 +262,7 @@ function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; hyper
 
     model = protein_interaction_network(connectivity)
     N = length(species(model))
-    parameter_sets = pin_parameter_sets(model, samples; 
+    parameter_sets = pin_parameter_sets(model, samples, random_seed; 
                                         dimensionless_time=dimensionless_time, 
                                         parameter_limits=parameter_limits, 
                                         sampling_scales=sampling_scales, 

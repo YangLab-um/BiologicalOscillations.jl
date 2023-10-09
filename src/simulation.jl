@@ -7,6 +7,7 @@ Creates an array of parameter sets within the limits provided in `parameter_limi
 - `samples::Int``: Number of parameter sets to be generated
 - `parameter_limits::AbstractVector`: Array of tuples defining the lower and upper limits of each individual parameter in a model. The length of this array is used to calculate the number of parameters in each parameter set.
 - `sampling_scales::AbstractVector`: Array of strings containing the sampling scale for each individual parameter in a model. Accepted strings are "linear" and "log".
+- `random_seed::Int`: Seed for the random number generator.
 
 # Arguments (Optional)
 - `sampling_style::String`: Sampling style of the algorithm. Accepted strings are "lhc" and "random".
@@ -14,7 +15,8 @@ Creates an array of parameter sets within the limits provided in `parameter_limi
 # Returns
 - `parameter_sets::AbstractArray`: Array of parameter sets of length `samples`.
 """
-function generate_parameter_sets(samples::Int, parameter_limits::AbstractVector, sampling_scales::AbstractVector; sampling_style::String="lhc")
+function generate_parameter_sets(samples::Int, parameter_limits::AbstractVector, sampling_scales::AbstractVector, random_seed::Int; sampling_style::String="lhc")
+    Random.seed!(random_seed)
     number_of_parameters = length(parameter_limits)
     # Draw sample
     if lowercase(sampling_style) == "lhc"
