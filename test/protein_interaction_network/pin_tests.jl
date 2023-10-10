@@ -100,7 +100,7 @@ timescale = pin_timescale(α, β, γ)
 # Test `pin_parameter_sets`
 repressilator = protein_interaction_network([0 0 -1;-1 0 0;0 -1 0])
 samples = 10
-parameter_array = pin_parameter_sets(repressilator, samples)
+parameter_array = pin_parameter_sets(repressilator, samples, 123)
 n_parameters = length(parameters(repressilator))
 @test size(parameter_array) == (samples, n_parameters)
 @test all(parameter_array[:,1] .== 1.0)
@@ -108,7 +108,7 @@ n_parameters = length(parameters(repressilator))
 # Test `pin_equilibration_times`
 repressilator = protein_interaction_network([0 0 -1;-1 0 0;0 -1 0])
 samples = 10
-parameter_array = pin_parameter_sets(repressilator, samples)
+parameter_array = pin_parameter_sets(repressilator, samples, 123)
 equilibration_times = pin_equilibration_times(repressilator, parameter_array)
 @test size(equilibration_times) == (samples,)
 #TODO: Create a known solution and test that the equilibration times are correct

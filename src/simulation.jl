@@ -266,18 +266,14 @@ function generate_find_oscillations_output(model::ReactionSystem, parameter_sets
         result["parameter_sets"] = Dict()
         if haskey(hyperparameters["simulation_output"]["parameter_sets"], "oscillatory") 
             if hyperparameters["simulation_output"]["parameter_sets"]["oscillatory"] == true
-                oscillatory_df = filter(row -> row["is_oscillatory"] == true, simulation_result)
-                oscillatory_idxs = oscillatory_df[!, "parameter_index"]
-                oscillatory_parameters = parameters[oscillatory_idxs, :]
+                oscillatory_parameters = parameters[oscillatory_status, :]
                 result["parameter_sets"]["oscillatory"] = DataFrame(oscillatory_parameters, 
                                                                     parameter_names)
             end
         end
         if haskey(hyperparameters["simulation_output"]["parameter_sets"], "non_oscillatory")
             if hyperparameters["simulation_output"]["parameter_sets"]["non_oscillatory"] == true
-                non_oscillatory_df = filter(row -> row["is_oscillatory"] == false, simulation_result)
-                non_oscillatory_idxs = non_oscillatory_df[!, "parameter_index"]
-                non_oscillatory_parameters = parameters[non_oscillatory_idxs, :]
+                non_oscillatory_parameters = parameters[.!oscillatory_status, :]
                 result["parameter_sets"]["non_oscillatory"] = DataFrame(non_oscillatory_parameters, 
                                                                         parameter_names)
             end
