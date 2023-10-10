@@ -7,7 +7,8 @@ using Combinatorics, Luxor, Images, FileIO, Random
 # Models
 export elowitz_2000, guan_2008
 # Simulation
-export generate_parameter_sets, equilibrate_ODEs, simulate_ODEs, calculate_simulation_times, calculate_oscillatory_status
+export generate_parameter_sets, equilibrate_ODEs, simulate_ODEs, calculate_simulation_times
+export calculate_oscillatory_status, generate_find_oscillations_output
 # Feature calculation
 export calculate_main_frequency, calculate_amplitude, is_ODE_oscillatory
 # Protein interaction network

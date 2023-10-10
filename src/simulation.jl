@@ -220,3 +220,196 @@ function calculate_oscillatory_status(simulation_data::Dict; freq_variation_thre
 
     return oscillatory_status
 end
+
+
+"""
+    generate_find_oscillations_output(model::ReactionSystem, parameter_sets::AbstractArray, equilibration_data::Dict, equilibration_times::AbstractVector, simulation_data::Dict, simulation_times::AbstractVector, oscillatory_status::AbstractVector, hyperparameters::Dict)
+
+Generates a dataframe with the results of the simulation and equilibration of a model. The final output is controlled by the `hyperparameters` dict.
+
+# Arguments (Required)
+- `model::ReactionSystem`: A set of differential equations encoded as a reaction ReactionSystem
+- `parameter_sets::AbstractArray`: Array where each row defines the parameter set for each simulation
+- `equilibration_data::Dict`: Dictionary of equilibration data generated with [`equilibrate_ODEs`](@ref)
+- `equilibration_times::AbstractVector`: Array of equilibration times 
+- `simulation_data::Dict`: Dictionary of simulation data generated with [`simulate_ODEs`](@ref)
+- `simulation_times::AbstractVector`: Array of simulation times
+- `oscillatory_status::AbstractVector`: Array of oscillatory status for each parameter set
+- `hyperparameters::Dict`: Dictionary of hyperparameters for the simulation
+"""
+function generate_find_oscillations_output(model::ReactionSystem, parameter_sets::AbstractArray, 
+                                           equilibration_data::Dict, equilibration_times::AbstractVector, 
+                                           simulation_data::Dict, simulation_times::AbstractVector, 
+                                           oscillatory_status::AbstractVector, hyperparameters::Dict)
+    result = Dict()
+    samples = size(parameter_sets, 1)
+    N = length(species(model))
+    # Model
+    if haskey(hyperparameters["simulation_output"], "model")
+        if hyperparameters["simulation_output"]["model"] == true
+            result["model"] = model
+        end
+    end
+    # Hyperparameters
+    if haskey(hyperparameters["simulation_output"], "hyperparameters")
+        if hyperparameters["simulation_output"]["hyperparameters"] == true
+            result["hyperparameters"] = hyperparameters
+        end
+    end
+    # Parameter sets
+    if haskey(hyperparameters["simulation_output"], "parameter_sets")
+        parameter_map = paramsmap(model)
+        parameter_names = Array{String}(undef, length(parameter_map))
+        for (k, v) in parameter_map
+            parameter_names[v] = string(k)
+        end
+        result["parameter_sets"] = Dict()
+        if haskey(hyperparameters["simulation_output"]["parameter_sets"], "oscillatory") 
+            if hyperparameters["simulation_output"]["parameter_sets"]["oscillatory"] == true
+                oscillatory_df = filter(row -> row["is_oscillatory"] == true, simulation_result)
+                oscillatory_idxs = oscillatory_df[!, "parameter_index"]
+                oscillatory_parameters = parameters[oscillatory_idxs, :]
+                result["parameter_sets"]["oscillatory"] = DataFrame(oscillatory_parameters, 
+                                                                    parameter_names)
+            end
+        end
+        if haskey(hyperparameters["simulation_output"]["parameter_sets"], "non_oscillatory")
+            if hyperparameters["simulation_output"]["parameter_sets"]["non_oscillatory"] == true
+                non_oscillatory_df = filter(row -> row["is_oscillatory"] == false, simulation_result)
+                non_oscillatory_idxs = non_oscillatory_df[!, "parameter_index"]
+                non_oscillatory_parameters = parameters[non_oscillatory_idxs, :]
+                result["parameter_sets"]["non_oscillatory"] = DataFrame(non_oscillatory_parameters, 
+                                                                        parameter_names)
+            end
+        end
+    end
+    # Equilibration result
+    if haskey(hyperparameters["simulation_output"], "equilibration_result")
+        equilibration_summary = Dict()
+        if haskey(hyperparameters["simulation_output"]["equilibration_result"], "parameter_index")
+            if hyperparameters["simulation_output"]["equilibration_result"]["parameter_index"] == true
+                equilibration_summary["parameter_index"] = collect(1:1:samples)
+            end
+        end
+        if haskey(hyperparameters["simulation_output"]["equilibration_result"], "equilibration_times")
+            if hyperparameters["simulation_output"]["equilibration_result"]["equilibration_times"] == true
+                equilibration_summary["equilibration_times"] = equilibration_times
+            end
+        end
+        if haskey(hyperparameters["simulation_output"]["equilibration_result"], "final_velocity")
+            if hyperparameters["simulation_output"]["equilibration_result"]["final_velocity"] == true
+                equilibration_summary["final_velocity"] = equilibration_data["final_velocity"]
+            end
+        end
+        if haskey(hyperparameters["simulation_output"]["equilibration_result"], "final_state")
+            if hyperparameters["simulation_output"]["equilibration_result"]["final_state"] == true
+                final_state = mapreduce(permutedims, vcat, equilibration_data["final_state"])
+                for i=1:N
+                    equilibration_summary["final_state_$(i)"] = final_state[:,i]
+                end
+            end
+        end
+        if haskey(hyperparameters["simulation_output"]["equilibration_result"], "frequency")
+            if hyperparameters["simulation_output"]["equilibration_result"]["frequency"] == true
+                equilibration_summary["frequency"] = equilibration_data["frequency"]
+            end
+        end
+        if haskey(hyperparameters["simulation_output"]["equilibration_result"], "is_steady_state")
+            if hyperparameters["simulation_output"]["equilibration_result"]["is_steady_state"] == true
+                velocity = equilibration_data["final_velocity"]
+                cutoff = 10 ^ mean(log10.(velocity))
+                filter = velocity .> cutoff
+                equilibration_summary["is_steady_state"] = .!filter
+            end
+        end
+        result["equilibration_result"] = DataFrame(equilibration_summary)
+    end
+
+    # Simulation result
+    if haskey(hyperparameters["simulation_output"], "simulation_result")
+        simulation_summary = Dict()
+        velocity = equilibration_data["final_velocity"]
+        cutoff = 10 ^ mean(log10.(velocity))
+        filter = velocity .> cutoff
+        if haskey(hyperparameters["simulation_output"]["simulation_result"], "parameter_index")
+            if hyperparameters["simulation_output"]["simulation_result"]["parameter_index"] == true
+                simulation_summary["parameter_index"] = collect(1:1:samples)[filter]
+            end
+        end
+        if haskey(hyperparameters["simulation_output"]["simulation_result"], "simulation_times")
+            if hyperparameters["simulation_output"]["simulation_result"]["simulation_times"] == true
+                simulation_summary["simulation_times"] = simulation_times[filter]
+            end
+        end
+        if haskey(hyperparameters["simulation_output"]["simulation_result"], "final_state")
+            if hyperparameters["simulation_output"]["simulation_result"]["final_state"] == true
+                final_state = mapreduce(permutedims, vcat, simulation_data["final_state"])
+                for i=1:N
+                    simulation_summary["final_state_$(i)"] = final_state[:,i]
+                end
+            end
+        end
+        if haskey(hyperparameters["simulation_output"]["simulation_output"], "is_oscillatory")
+            if hyperparameters["simulation_output"]["simulation_output"]["is_oscillatory"] == true
+                simulation_summary["is_oscillatory"] = oscillatory_status
+            end
+        end
+        if haskey(hyperparameters["simulation_output"]["simulation_result"], "frequency")
+            if hyperparameters["simulation_output"]["simulation_result"]["frequency"] == true
+                for i=1:N
+                    frequency = Array{Float64}(undef, 0)
+                    for j=1:sum(filter)
+                        push!(frequency, simulation_data["frequency_data"][j]["frequency"][i])
+                    end
+                    simulation_summary["frequency_$(i)"] = frequency
+                end
+            end
+        end
+        if haskey(hyperparameters["simulation_output"]["simulation_result"], "fft_power")
+            if hyperparameters["simulation_output"]["simulation_result"]["fft_power"] == true
+                for i=1:N
+                    power = Array{Float64}(undef, 0)
+                    for j=1:sum(filter)
+                        push!(power, simulation_data["frequency_data"][j]["power"][i])
+                    end
+                    simulation_summary["fft_power_$(i)"] = power
+                end
+            end
+        end
+        if haskey(hyperparameters["simulation_output"]["simulation_result"], "amplitude")
+            if hyperparameters["simulation_output"]["simulation_result"]["amplitude"] == true
+                for i=1:N
+                    amplitude = Array{Float64}(undef, 0)
+                    for j=1:sum(filter)
+                        push!(amplitude, simulation_data["amplitude_data"][j]["amplitude"][i])
+                    end
+                    simulation_summary["amplitude_$(i)"] = amplitude
+                end
+            end
+        end
+        if haskey(hyperparameters["simulation_output"]["simulation_result"], "peak_variation")
+            if hyperparameters["simulation_output"]["simulation_result"]["peak_variation"] == true
+                for i=1:N
+                    peak_variation = Array{Float64}(undef, 0)
+                    for j=1:sum(filter)
+                        push!(peak_variation, simulation_data["amplitude_data"][j]["peak_variation"][i])
+                    end
+                    simulation_summary["peak_variation_$(i)"] = peak_variation
+                end
+            end
+        end
+        if haskey(hyperparameters["simulation_output"]["simulation_result"], "trough_variation")
+            if hyperparameters["simulation_output"]["simulation_result"]["trough_variation"] == true
+                for i=1:N
+                    trough_variation = Array{Float64}(undef, 0)
+                    for j=1:sum(filter)
+                        push!(trough_variation, simulation_data["amplitude_data"][j]["trough_variation"][i])
+                    end
+                    simulation_summary["trough_variation_$(i)"] = trough_variation
+                end
+            end
+        end
+        result["simulation_result"] = DataFrame(simulation_summary)
+    end
+    return result
+end
