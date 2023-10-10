@@ -289,59 +289,10 @@ function find_pin_oscillations(connectivity::AbstractMatrix, samples::Int; hyper
                                                       freq_variation_threshold=freq_variation_threshold, 
                                                       power_threshold=power_threshold, 
                                                       amp_variation_threshold=amp_variation_threshold)
-
-    # Create a dataframe with the parameter sets
-    parameter_map = paramsmap(model)
-    parameter_names = Array{String}(undef, length(parameter_map))
-    for (k, v) in parameter_map
-        parameter_names[v] = string(k)
-    end
-
-    # Create a dataframe with the equilibration result
-    equilibration_result = Dict(
-        "parameter_index" => collect(1:1:samples),
-        "equilibration_times" => equilibration_times,
-        "final_velocity" => equilibration_data["final_velocity"],
-        "frequency" => equilibration_data["frequency"],
-        "is_steady_state" => .!filter,)
-    final_state = mapreduce(permutedims, vcat, equilibration_data["final_state"])
-    for i=1:N
-        equilibration_result["final_state_$(i)"] = final_state[:,i]
-    end
-
-    # Create a dataframe with the simulation result
-    simulation_result = Dict(
-        "parameter_index" => collect(1:1:samples)[filter],
-        "simulation_times" => simulation_times[filter],
-        "is_oscillatory" => oscillatory_status,)
-    final_state = mapreduce(permutedims, vcat, simulation_data["final_state"])
-    for i=1:N
-        frequency = Array{Float64}(undef, 0)
-        power = Array{Float64}(undef, 0)
-        amplitude = Array{Float64}(undef, 0)
-        peak_variation = Array{Float64}(undef, 0)
-        trough_variation = Array{Float64}(undef, 0)
-        for j=1:sum(filter)
-            push!(frequency, simulation_data["frequency_data"][j]["frequency"][i])
-            push!(power, simulation_data["frequency_data"][j]["power"][i])
-            push!(amplitude, simulation_data["amplitude_data"][j]["amplitude"][i])
-            push!(peak_variation, simulation_data["amplitude_data"][j]["peak_variation"][i])
-            push!(trough_variation, simulation_data["amplitude_data"][j]["trough_variation"][i])
-        end
-        simulation_result["final_state_$(i)"] = final_state[:,i]
-        simulation_result["frequency_$(i)"] = frequency
-        simulation_result["fft_power_$(i)"] = power
-        simulation_result["amplitude_$(i)"] = amplitude
-        simulation_result["peak_variation_$(i)"] = peak_variation
-        simulation_result["trough_variation_$(i)"] = trough_variation
-    end
-
-    pin_result = Dict("model" => model,
-                      "parameter_sets" => DataFrame(parameter_sets, parameter_names),
-                      "equilibration_result" => DataFrame(equilibration_result),
-                      "simulation_result" => DataFrame(simulation_result),)
-
-    return pin_result
+    # Output
+    result = generate_find_oscillations_output(model, parameter_sets, equilibration_data, equilibration_times,
+                                               simulation_data, simulation_times, oscillatory_status, hyperparameters)
+    return result
 end
 
 
