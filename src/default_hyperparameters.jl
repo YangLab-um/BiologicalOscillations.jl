@@ -37,7 +37,7 @@ DEFAULT_SIMULATION_OUTPUT = Dict(
     ),
     "equilibration_result" => Dict(
         "parameter_index" => true,
-        "equilibration_times" => true,
+        "equilibration_time" => true,
         "final_velocity" => true,
         "final_state" => true,
         "frequency" => true,
@@ -45,7 +45,7 @@ DEFAULT_SIMULATION_OUTPUT = Dict(
     ),
     "simulation_result" => Dict(
         "parameter_index" => true,
-        "simulation_times" => true,
+        "simulation_time" => true,
         "final_state" => true,
         "frequency" => true,
         "fft_power" => true,

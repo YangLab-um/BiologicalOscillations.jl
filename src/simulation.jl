@@ -244,6 +244,9 @@ function generate_find_oscillations_output(model::ReactionSystem, parameter_sets
     result = Dict()
     samples = size(parameter_sets, 1)
     N = length(species(model))
+    velocity = equilibration_data["final_velocity"]
+    cutoff = 10 ^ mean(log10.(velocity))
+    filter = velocity .> cutoff
     # Model
     if haskey(hyperparameters["simulation_output"], "model")
         if hyperparameters["simulation_output"]["model"] == true
@@ -266,16 +269,28 @@ function generate_find_oscillations_output(model::ReactionSystem, parameter_sets
         result["parameter_sets"] = Dict()
         if haskey(hyperparameters["simulation_output"]["parameter_sets"], "oscillatory") 
             if hyperparameters["simulation_output"]["parameter_sets"]["oscillatory"] == true
-                oscillatory_parameters = parameters[oscillatory_status, :]
-                result["parameter_sets"]["oscillatory"] = DataFrame(oscillatory_parameters, 
-                                                                    parameter_names)
+                oscillatory_params_summary = Dict()
+                oscillatory_idxs = collect(1:1:samples)[filter][oscillatory_status]
+                oscillatory_params_summary["parameter_index"] = oscillatory_idxs
+                oscillatory_parameters = parameter_sets[oscillatory_idxs, :]
+                for i=1:length(parameter_map)
+                    oscillatory_params_summary["$(parameter_names[i])"] = oscillatory_parameters[:,i]
+                end
+                result["parameter_sets"]["oscillatory"] = DataFrame(oscillatory_params_summary)
             end
         end
         if haskey(hyperparameters["simulation_output"]["parameter_sets"], "non_oscillatory")
             if hyperparameters["simulation_output"]["parameter_sets"]["non_oscillatory"] == true
-                non_oscillatory_parameters = parameters[.!oscillatory_status, :]
-                result["parameter_sets"]["non_oscillatory"] = DataFrame(non_oscillatory_parameters, 
-                                                                        parameter_names)
+                fixed_point_params_summary = Dict()
+                steady_state_idxs = collect(1:1:samples)[.!filter]
+                non_oscillatory_idxs = collect(1:1:samples)[filter][.!oscillatory_status]
+                fixed_point_idxs = vcat(steady_state_idxs, non_oscillatory_idxs)
+                fixed_point_params_summary["parameter_index"] = fixed_point_idxs
+                non_oscillatory_parameters = parameter_sets[fixed_point_idxs, :]
+                for i=1:length(parameter_map)
+                    fixed_point_params_summary["$(parameter_names[i])"] = non_oscillatory_parameters[:,i]
+                end
+                result["parameter_sets"]["non_oscillatory"] = DataFrame(fixed_point_params_summary)
             end
         end
     end
@@ -287,9 +302,9 @@ function generate_find_oscillations_output(model::ReactionSystem, parameter_sets
                 equilibration_summary["parameter_index"] = collect(1:1:samples)
             end
         end
-        if haskey(hyperparameters["simulation_output"]["equilibration_result"], "equilibration_times")
-            if hyperparameters["simulation_output"]["equilibration_result"]["equilibration_times"] == true
-                equilibration_summary["equilibration_times"] = equilibration_times
+        if haskey(hyperparameters["simulation_output"]["equilibration_result"], "equilibration_time")
+            if hyperparameters["simulation_output"]["equilibration_result"]["equilibration_time"] == true
+                equilibration_summary["equilibration_time"] = equilibration_times
             end
         end
         if haskey(hyperparameters["simulation_output"]["equilibration_result"], "final_velocity")
@@ -312,9 +327,6 @@ function generate_find_oscillations_output(model::ReactionSystem, parameter_sets
         end
         if haskey(hyperparameters["simulation_output"]["equilibration_result"], "is_steady_state")
             if hyperparameters["simulation_output"]["equilibration_result"]["is_steady_state"] == true
-                velocity = equilibration_data["final_velocity"]
-                cutoff = 10 ^ mean(log10.(velocity))
-                filter = velocity .> cutoff
                 equilibration_summary["is_steady_state"] = .!filter
             end
         end
@@ -324,17 +336,14 @@ function generate_find_oscillations_output(model::ReactionSystem, parameter_sets
     # Simulation result
     if haskey(hyperparameters["simulation_output"], "simulation_result")
         simulation_summary = Dict()
-        velocity = equilibration_data["final_velocity"]
-        cutoff = 10 ^ mean(log10.(velocity))
-        filter = velocity .> cutoff
         if haskey(hyperparameters["simulation_output"]["simulation_result"], "parameter_index")
             if hyperparameters["simulation_output"]["simulation_result"]["parameter_index"] == true
                 simulation_summary["parameter_index"] = collect(1:1:samples)[filter]
             end
         end
-        if haskey(hyperparameters["simulation_output"]["simulation_result"], "simulation_times")
-            if hyperparameters["simulation_output"]["simulation_result"]["simulation_times"] == true
-                simulation_summary["simulation_times"] = simulation_times[filter]
+        if haskey(hyperparameters["simulation_output"]["simulation_result"], "simulation_time")
+            if hyperparameters["simulation_output"]["simulation_result"]["simulation_time"] == true
+                simulation_summary["simulation_time"] = simulation_times[filter]
             end
         end
         if haskey(hyperparameters["simulation_output"]["simulation_result"], "final_state")
@@ -345,8 +354,8 @@ function generate_find_oscillations_output(model::ReactionSystem, parameter_sets
                 end
             end
         end
-        if haskey(hyperparameters["simulation_output"]["simulation_output"], "is_oscillatory")
-            if hyperparameters["simulation_output"]["simulation_output"]["is_oscillatory"] == true
+        if haskey(hyperparameters["simulation_output"]["simulation_result"], "is_oscillatory")
+            if hyperparameters["simulation_output"]["simulation_result"]["is_oscillatory"] == true
                 simulation_summary["is_oscillatory"] = oscillatory_status
             end
         end
