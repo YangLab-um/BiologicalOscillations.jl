@@ -276,7 +276,9 @@ function generate_find_oscillations_output(model::ReactionSystem, parameter_sets
                 for i=1:length(parameter_map)
                     oscillatory_params_summary["$(parameter_names[i])"] = oscillatory_parameters[:,i]
                 end
-                result["parameter_sets"]["oscillatory"] = DataFrame(oscillatory_params_summary)
+                oscillatory_dataframe = DataFrame(oscillatory_params_summary)
+                column_order = vcat(["parameter_index"], parameter_names)
+                result["parameter_sets"]["oscillatory"] = select(oscillatory_dataframe, column_order)
             end
         end
         if haskey(hyperparameters["simulation_output"]["parameter_sets"], "non_oscillatory")
@@ -290,7 +292,9 @@ function generate_find_oscillations_output(model::ReactionSystem, parameter_sets
                 for i=1:length(parameter_map)
                     fixed_point_params_summary["$(parameter_names[i])"] = non_oscillatory_parameters[:,i]
                 end
-                result["parameter_sets"]["non_oscillatory"] = DataFrame(fixed_point_params_summary)
+                fixed_point_dataframe = DataFrame(fixed_point_params_summary)
+                column_order = vcat(["parameter_index"], parameter_names)
+                result["parameter_sets"]["non_oscillatory"] = select(fixed_point_dataframe, column_order)
             end
         end
     end

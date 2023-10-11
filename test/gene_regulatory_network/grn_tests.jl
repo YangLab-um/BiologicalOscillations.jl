@@ -92,3 +92,39 @@ generated_parameters = grn_parameters(generated_goodwin, α, β, δ, γ, κ, η)
 timescale = grn_timescale(α, δ)
 
 @test timescale == 1.0/0.13
+
+# Test that parameters from run and generated with a random seed are the same
+samples = 200
+random_seed = 4567
+connectivity_T0 = [0 0 -1;-1 0 0;0 -1 0]
+hyperparameters = DEFAULT_GRN_HYPERPARAMETERS
+hyperparameters["random_seed"] = random_seed
+result = find_grn_oscillations(connectivity_T0, samples; 
+                               hyperparameters=hyperparameters)
+
+oscillatory_params = result["parameter_sets"]["oscillatory"]
+fixed_point_params = result["parameter_sets"]["non_oscillatory"]
+all_params = vcat(oscillatory_params, fixed_point_params)
+all_params = sort!(all_params, :parameter_index)
+all_params = all_params[:, 2:end]
+column_order = ["α[1]", "β[1]", "δ[1]", "α[2]", "β[2]", "δ[2]", "α[3]", "β[3]", "δ[3]",
+                "γ[1]", "κ[1]", "η[1]", "γ[2]", "κ[2]", "η[2]", "γ[3]", "κ[3]", "η[3]"]
+all_params = select(all_params, column_order)
+
+model = result["model"]
+parameter_limits = hyperparameters["parameter_limits"]
+sampling_scales = hyperparameters["sampling_scales"]
+sampling_style = hyperparameters["sampling_style"]
+dimensionless_time = hyperparameters["dimensionless_time"]
+
+parameter_sets = grn_parameter_sets(model, samples, random_seed; 
+                                    dimensionless_time=dimensionless_time, 
+                                    parameter_limits=parameter_limits, 
+                                    sampling_scales=sampling_scales, 
+                                    sampling_style=sampling_style)
+
+for (idx, row) in enumerate(eachrow(all_params))
+    params_1 = parameter_sets[idx, :]
+    params_2 = collect(row)
+    @test params_1 == params_2
+end
