@@ -1,4 +1,5 @@
 using BiologicalOscillations, Catalyst, ModelingToolkit, DifferentialEquations
+using DataFrames, Peaks
 
 # Test `protein_interaction_network`
 ## Error handling
