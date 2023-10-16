@@ -145,6 +145,7 @@ Generate a set of parameter values for a gene regulatory network model.
 # Arguments (Required)
 - `model::ReactionSystem`: Model generated with `gene_regulatory_network`
 - `samples::Int`: Number of parameter sets to generate
+- `random_seed::Int`: Random seed for the sampling algorithm
 
 # Arguments (Optional)
 - `dimensionless_time::Bool=true`: If true, α₁ is set to 1.0 as well as the first N κ's with N=number of nodes. This is done to make the timescale of the system dimensionless.
@@ -159,7 +160,7 @@ sampling_scales = Dict("α" => "log", "β" => "log", "δ" => "log", "γ" => "log
 ```
 - `sampling_style::String="lhc"`: Sampling style. Options are "lhc" for latin hypercube sampling and "random" for random sampling.
 """
-function grn_parameter_sets(model::ReactionSystem, samples::Int; dimensionless_time=true, parameter_limits=Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), "δ" => (1e-2, 1e2), "γ" => (1e-2, 1e2), "κ" => (0.2, 1.0), "η" => (1.0, 5.0)), sampling_scales=Dict("α" => "log", "β" => "log", "δ" => "log", "γ" => "log", "κ" => "linear", "η" => "linear"), sampling_style="lhc")
+function grn_parameter_sets(model::ReactionSystem, samples::Int, random_seed::Int; dimensionless_time=true, parameter_limits=Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), "δ" => (1e-2, 1e2), "γ" => (1e-2, 1e2), "κ" => (0.2, 1.0), "η" => (1.0, 5.0)), sampling_scales=Dict("α" => "log", "β" => "log", "δ" => "log", "γ" => "log", "κ" => "linear", "η" => "linear"), sampling_style="lhc")
     N, E = grn_nodes_edges(model)
 
     limits = []
@@ -186,7 +187,7 @@ function grn_parameter_sets(model::ReactionSystem, samples::Int; dimensionless_t
         push!(scales, sampling_scales["η"])
     end
 
-    parameter_array = generate_parameter_sets(samples, limits, scales; sampling_style=sampling_style)
+    parameter_array = generate_parameter_sets(samples, limits, scales, random_seed; sampling_style=sampling_style)
 
     if dimensionless_time
         # α₁ = 1.0
@@ -255,6 +256,7 @@ pin_result = Dict("model" => "ReactionSystem of the gene regulatory network",
 """
 function find_grn_oscillations(connectivity::AbstractMatrix, samples::Int; hyperparameters=DEFAULT_GRN_HYPERPARAMETERS)
     # Unpack hyperparameters
+    random_seed = hyperparameters["random_seed"]
     initial_conditions = hyperparameters["initial_conditions"]
     dimensionless_time = hyperparameters["dimensionless_time"]
     parameter_limits = hyperparameters["parameter_limits"]
@@ -273,7 +275,7 @@ function find_grn_oscillations(connectivity::AbstractMatrix, samples::Int; hyper
 
     model = gene_regulatory_network(connectivity)
     N = length(species(model))
-    parameter_sets = grn_parameter_sets(model, samples;
+    parameter_sets = grn_parameter_sets(model, samples, random_seed;
                                         dimensionless_time=dimensionless_time,
                                         parameter_limits=parameter_limits,
                                         sampling_scales=sampling_scales,
@@ -300,59 +302,10 @@ function find_grn_oscillations(connectivity::AbstractMatrix, samples::Int; hyper
                                                       freq_variation_threshold=freq_variation_threshold,
                                                       power_threshold=power_threshold,
                                                       amp_variation_threshold=amp_variation_threshold)
-
-    # Create a dataframe with the parameter sets
-    parameter_map = paramsmap(model)
-    parameter_names = Array{String}(undef, length(parameter_map))
-    for (k, v) in parameter_map
-        parameter_names[v] = string(k)
-    end
-
-    # Create a dataframe with the equilibration result
-    equilibration_result = Dict(
-        "parameter_index" => collect(1:1:samples),
-        "equilibration_times" => equilibration_times,
-        "final_velocity" => equilibration_data["final_velocity"],
-        "frequency" => equilibration_data["frequency"],
-        "is_steady_state" => .!filter,)
-    final_state = mapreduce(permutedims, vcat, equilibration_data["final_state"])
-    for i=1:N
-        equilibration_result["final_state_$(i)"] = final_state[:,i]
-    end
-
-    # Create a dataframe with the simulation result
-    simulation_result = Dict(
-        "parameter_index" => collect(1:1:samples)[filter],
-        "simulation_times" => simulation_times[filter],
-        "is_oscillatory" => oscillatory_status,)
-    final_state = mapreduce(permutedims, vcat, simulation_data["final_state"])
-    for i=1:N
-        frequency = Array{Float64}(undef, 0)
-        power = Array{Float64}(undef, 0)
-        amplitude = Array{Float64}(undef, 0)
-        peak_variation = Array{Float64}(undef, 0)
-        trough_variation = Array{Float64}(undef, 0)
-        for j=1:sum(filter)
-            push!(frequency, simulation_data["frequency_data"][j]["frequency"][i])
-            push!(power, simulation_data["frequency_data"][j]["power"][i])
-            push!(amplitude, simulation_data["amplitude_data"][j]["amplitude"][i])
-            push!(peak_variation, simulation_data["amplitude_data"][j]["peak_variation"][i])
-            push!(trough_variation, simulation_data["amplitude_data"][j]["trough_variation"][i])
-        end
-        simulation_result["final_state_$(i)"] = final_state[:,i]
-        simulation_result["frequency_$(i)"] = frequency
-        simulation_result["fft_power_$(i)"] = power
-        simulation_result["amplitude_$(i)"] = amplitude
-        simulation_result["peak_variation_$(i)"] = peak_variation
-        simulation_result["trough_variation_$(i)"] = trough_variation
-    end
-
-    grn_result = Dict("model" => model,
-                      "parameter_sets" => DataFrame(parameter_sets, parameter_names),
-                      "equilibration_result" => DataFrame(equilibration_result),
-                      "simulation_result" => DataFrame(simulation_result),)
-
-    return grn_result
+    # Output
+    result = generate_find_oscillations_output(model, parameter_sets, equilibration_data, equilibration_times,
+                                               simulation_data, simulation_times, oscillatory_status, hyperparameters)
+    return result
 end
 
 

@@ -1,4 +1,5 @@
 using BiologicalOscillations, Catalyst, ModelingToolkit, DifferentialEquations
+using DataFrames, Peaks
 
 # Test `protein_interaction_network`
 ## Error handling
@@ -100,7 +101,7 @@ timescale = pin_timescale(α, β, γ)
 # Test `pin_parameter_sets`
 repressilator = protein_interaction_network([0 0 -1;-1 0 0;0 -1 0])
 samples = 10
-parameter_array = pin_parameter_sets(repressilator, samples)
+parameter_array = pin_parameter_sets(repressilator, samples, 123)
 n_parameters = length(parameters(repressilator))
 @test size(parameter_array) == (samples, n_parameters)
 @test all(parameter_array[:,1] .== 1.0)
@@ -108,7 +109,7 @@ n_parameters = length(parameters(repressilator))
 # Test `pin_equilibration_times`
 repressilator = protein_interaction_network([0 0 -1;-1 0 0;0 -1 0])
 samples = 10
-parameter_array = pin_parameter_sets(repressilator, samples)
+parameter_array = pin_parameter_sets(repressilator, samples, 123)
 equilibration_times = pin_equilibration_times(repressilator, parameter_array)
 @test size(equilibration_times) == (samples,)
 #TODO: Create a known solution and test that the equilibration times are correct
@@ -156,3 +157,170 @@ connectivity_P0_6 = [0 0 0 0 -1; -1 0 0 0 0; 1 -1 0 0 0; 0 0 -1 0 0; 0 0 0 -1 0]
 P0_6_hit_rate = 0.059
 calculated_hit_rate = pin_hit_rate(connectivity_P0_6, samples; verbose=false)
 @test calculated_hit_rate ≈ P0_6_hit_rate rtol=0.3
+
+# Test that parameters from run and generated with a random seed are the same
+samples = 200
+random_seed = 4567
+connectivity_T0 = [0 0 -1;-1 0 0;0 -1 0]
+hyperparameters = DEFAULT_PIN_HYPERPARAMETERS
+hyperparameters["random_seed"] = random_seed
+result = find_pin_oscillations(connectivity_T0, samples; 
+                               hyperparameters=hyperparameters)
+
+oscillatory_params = result["parameter_sets"]["oscillatory"]
+fixed_point_params = result["parameter_sets"]["non_oscillatory"]
+all_params = vcat(oscillatory_params, fixed_point_params)
+all_params = sort!(all_params, :parameter_index)
+all_params = all_params[:, 2:end]
+column_order = [ "α[1]", "β[1]", "α[2]", "β[2]", "α[3]", "β[3]",
+                 "γ[1]", "κ[1]", "η[1]", "γ[2]", "κ[2]", "η[2]",
+                 "γ[3]", "κ[3]", "η[3]" ]
+all_params = select(all_params, column_order)
+
+model = result["model"]
+parameter_limits = hyperparameters["parameter_limits"]
+sampling_scales = hyperparameters["sampling_scales"]
+sampling_style = hyperparameters["sampling_style"]
+dimensionless_time = hyperparameters["dimensionless_time"]
+
+parameter_sets = pin_parameter_sets(model, samples, random_seed; 
+                                    dimensionless_time=dimensionless_time, 
+                                    parameter_limits=parameter_limits, 
+                                    sampling_scales=sampling_scales, 
+                                    sampling_style=sampling_style)
+
+for (idx, row) in enumerate(eachrow(all_params))
+    params_1 = parameter_sets[idx, :]
+    params_2 = collect(row)
+    @test params_1 == params_2
+end
+
+# Test that parameters are truly oscillatory and non-oscillatory
+# Values taken from run on 10/11/2023
+samples = 200
+random_seed = 4567
+connectivity_T0 = [0 0 -1;-1 0 0;0 -1 0]
+hyperparameters = DEFAULT_PIN_HYPERPARAMETERS
+hyperparameters["random_seed"] = random_seed
+solver = hyperparameters["solver"]
+result = find_pin_oscillations(connectivity_T0, samples; 
+                               hyperparameters=hyperparameters)
+model = result["model"]
+oscillatory_params = result["parameter_sets"]["oscillatory"]
+
+peak_number_found = zeros(2)
+for selected_idx in 1:2
+    parameter_index = oscillatory_params[selected_idx, 1]
+    final_states = select(result["simulation_result"], r"parameter_index|final_state_")
+    final_states = filter(row -> row["parameter_index"] == parameter_index, final_states)
+    initial_condition = collect(final_states[1, 1:end-1])
+    final_time = 10
+    parameters = collect(oscillatory_params[selected_idx, 2:end])
+    ode_problem = ODEProblem(model, initial_condition, 
+                            (0.0, final_time), parameters)
+    sol = solve(ode_problem, solver, saveat = final_time/5000)
+    df = DataFrame(t = sol.t, x = sol[1, :], y = sol[2, :], z = sol[3, :])
+    peak_num = size(findmaxima(df.x)[1], 1)
+    peak_number_found[selected_idx] = peak_num
+end
+
+expected_peaks = [13, 44]
+@test peak_number_found == expected_peaks
+
+# Test that parameters are truly non-oscillatory
+non_oscillatory_params = result["parameter_sets"]["non_oscillatory"]
+
+for selected_idx in 1:2
+    parameter_index = non_oscillatory_params[selected_idx, 1]
+    final_states = select(result["equilibration_result"], r"parameter_index|final_state_")
+    final_states = filter(row -> row["parameter_index"] == parameter_index, final_states)
+    final_condition = collect(final_states[1, 1:end-1])
+    initial_condition = 0.5 * ones(3)
+    final_time = 10
+    parameters = collect(non_oscillatory_params[selected_idx, 2:end])
+    ode_problem = ODEProblem(model, initial_condition, 
+                            (0.0, final_time), parameters)
+    sol = solve(ode_problem, solver, saveat = final_time/5000)
+    df = DataFrame(t = sol.t, x = sol[1, :], y = sol[2, :], z = sol[3, :])
+    final_state_simulation = collect(df[end, 2:end])
+    @test final_state_simulation ≈ final_condition rtol=1e-4
+end
+
+
+# Test that output can be customized
+samples = 200
+connectivity_T0 = [0 0 -1;-1 0 0;0 -1 0]
+hyperparameters = DEFAULT_PIN_HYPERPARAMETERS
+
+sim_output_config = Dict(
+    "model" => true,
+)
+hyperparameters["simulation_output"] = sim_output_config
+result = find_pin_oscillations(connectivity_T0, samples; 
+                               hyperparameters=hyperparameters)
+@test result["model"] isa ReactionSystem
+
+sim_output_config = Dict(
+    "hyperparameters" => true,
+)
+hyperparameters["simulation_output"] = sim_output_config
+result = find_pin_oscillations(connectivity_T0, samples; 
+                               hyperparameters=hyperparameters)
+@test result["hyperparameters"] isa Dict
+@test keys(result["hyperparameters"]) == keys(hyperparameters)
+for key in keys(hyperparameters)
+    # don't compare initial_conditions because it's NaN
+    if key == "initial_conditions"
+        continue
+    end
+    @test result["hyperparameters"][key] == hyperparameters[key]
+end
+
+sim_output_config = Dict(
+    "parameter_sets" => Dict(
+        "oscillatory" => true,
+        "non_oscillatory" => true
+    )
+)
+hyperparameters["simulation_output"] = sim_output_config
+result = find_pin_oscillations(connectivity_T0, samples; 
+                               hyperparameters=hyperparameters)
+@test result["parameter_sets"] isa Dict
+@test result["parameter_sets"]["oscillatory"] isa DataFrame
+@test result["parameter_sets"]["non_oscillatory"] isa DataFrame
+
+sim_output_config = Dict(
+    "equilibration_result" => Dict(
+        "parameter_index" => true,
+        "equilibration_time" => true,
+        "final_velocity" => true,
+        "final_state" => true,
+        "frequency" => true,
+        "is_steady_state" => true
+    )
+)
+hyperparameters["simulation_output"] = sim_output_config
+result = find_pin_oscillations(connectivity_T0, samples; 
+                               hyperparameters=hyperparameters)
+@test result["equilibration_result"] isa DataFrame
+@test size(result["equilibration_result"], 2) == 8
+
+sim_output_config = Dict(
+    "simulation_result" => Dict(
+        "parameter_index" => true,
+        "simulation_time" => true,
+        "final_state" => true,
+        "frequency" => true,
+        "fft_power" => true,
+        "amplitude" => true,
+        "peak_variation" => true,
+        "trough_variation" => true,
+        "is_oscillatory" => true
+    )
+)
+
+hyperparameters["simulation_output"] = sim_output_config
+result = find_pin_oscillations(connectivity_T0, samples; 
+                               hyperparameters=hyperparameters)
+@test result["simulation_result"] isa DataFrame
+@test size(result["simulation_result"], 2) == 21

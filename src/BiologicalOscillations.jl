@@ -2,12 +2,13 @@ module BiologicalOscillations
 
 using Catalyst, DifferentialEquations, ModelingToolkit, Latexify
 using Statistics, DSP, Peaks, LatinHypercubeSampling, DataFrames
-using Combinatorics, Luxor, Images, FileIO
+using Combinatorics, Luxor, Images, FileIO, Random
 
 # Models
 export elowitz_2000, guan_2008
 # Simulation
-export generate_parameter_sets, equilibrate_ODEs, simulate_ODEs, calculate_simulation_times, calculate_oscillatory_status
+export generate_parameter_sets, equilibrate_ODEs, simulate_ODEs, calculate_simulation_times
+export calculate_oscillatory_status, generate_find_oscillations_output
 # Feature calculation
 export calculate_main_frequency, calculate_amplitude, is_ODE_oscillatory
 # Protein interaction network
@@ -28,6 +29,7 @@ export is_valid_connectivity, connectivity_string_to_matrix
 # Default hyperparameters
 export DEFAULT_PIN_HYPERPARAMETERS, DEFAULT_PIN_PARAMETER_LIMITS, DEFAULT_PIN_SAMPLING_SCALES
 export DEFAULT_GRN_HYPERPARAMETERS, DEFAULT_GRN_PARAMETER_LIMITS, DEFAULT_GRN_SAMPLING_SCALES
+export DEFAULT_SIMULATION_OUTPUT
 # Visualization utilities
 export draw_connectivity
 
