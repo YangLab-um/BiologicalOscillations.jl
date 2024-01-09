@@ -5,7 +5,7 @@ using Statistics, DSP, Peaks, LatinHypercubeSampling, DataFrames
 using Combinatorics, Luxor, Images, FileIO, Random
 
 # Models
-export elowitz_2000, guan_2008
+export elowitz_2000, guan_2008, kimchi_2020
 # Simulation
 export generate_parameter_sets, equilibrate_ODEs, simulate_ODEs, calculate_simulation_times
 export calculate_oscillatory_status, generate_find_oscillations_output
