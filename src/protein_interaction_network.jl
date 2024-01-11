@@ -297,7 +297,7 @@ end
 
 
 """
-    pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target_oscillations::Int=100, max_samples::Int=1000000, max_trials::Int=5, hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
+    pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target_oscillations::Int=100, max_samples::Int=1000000, max_trials::Int=5, hyperparameters=DEFAULT_PIN_HYPERPARAMETERS, verbose=true)
 
 Estimates the hit rate of the oscillatory parameter set search in a protein interaction network
 
@@ -317,9 +317,9 @@ Estimates the hit rate of the oscillatory parameter set search in a protein inte
 """
 function pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target_oscillations::Int=100, max_samples::Int=1000000, max_trials::Int=5, hyperparameters=DEFAULT_PIN_HYPERPARAMETERS, verbose=true)
     pin_result = find_pin_oscillations(connectivity, initial_samples, hyperparameters=hyperparameters)
-    oscillatory = sum(pin_result["simulation_result"][!,"is_oscillatory"])
+    oscillatory = sum(pin_result["simulation_result"][!, "is_oscillatory"])
     if verbose
-        println("Oscillatory: $oscillatory, Samples $initial_samples")
+        println("Oscillatory: $oscillatory, Samples: $initial_samples")
     end
     hit_rate =  oscillatory / initial_samples
 
@@ -337,7 +337,7 @@ function pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target
             pin_result = find_pin_oscillations(connectivity, samples, hyperparameters=hyperparameters)
             oscillatory = sum(pin_result["simulation_result"][!,"is_oscillatory"])
             if verbose
-                println("Oscillatory: $oscillatory, Samples $samples")
+                println("Oscillatory: $oscillatory, Samples: $samples")
             end
             hit_rate = oscillatory / samples
             trial += 1
