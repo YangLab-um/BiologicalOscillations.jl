@@ -74,11 +74,20 @@ function calculate_amplitude(ode_solution::ODESolution)
         # Peaks
         peak_positions, ~ = findmaxima(ode_solution[i,:])
         peak_positions, ~ = peakproms(peak_positions, ode_solution[i,:], minprom=rough_amp/3.0)
-        peak_values = ode_solution[i, peak_positions]
+        if isempty(peak_positions)
+            # This case must be explicitly handled as ode_solution[i, Int64[]] raises an ArgumentError
+            peak_values = Float64[]
+        else
+            peak_values = ode_solution[i, peak_positions]
+        end
         # Troughs
         trough_positions, ~ = findminima(ode_solution[i,:])
         trough_positions, ~ = peakproms(trough_positions, ode_solution[i,:], minprom=rough_amp/3.0)
-        trough_values = ode_solution[i, trough_positions]
+        if isempty(trough_positions)
+            trough_values = Float64[]
+        else
+            trough_values = ode_solution[i, trough_positions]
+        end
         if length(peak_values) > 0 && length(trough_values) > 0
             amplitude[i] = mean(peak_values) - mean(trough_values)
             peak_variation[i] = std(peak_values)/amplitude[i]

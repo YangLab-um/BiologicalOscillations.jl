@@ -62,6 +62,63 @@ end
 
 
 """
+   is_directed_cycle_graph(connectivity::AbstractMatrix)
+
+   Returns true if the given connectivity matrix represents a directed cycle graph. Types of interactions (positive or negative) are ignored.
+
+# Arguments (Required)
+- `connectivity::AbstractMatrix`: Connectivity matrix of an interaction network
+
+# Returns
+- `result::Bool`: True if the interaction network is directed cyclic
+"""
+function is_directed_cycle_graph(connectivity::AbstractMatrix)
+    n = size(connectivity)[1]
+    reference_circular_graph = binary_to_connectivity("1"^n)
+    return is_same_network(abs.(connectivity), reference_circular_graph)
+end
+
+
+"""
+    is_same_set_of_networks(connectivity_vector1::AbstractVector, connectivity_vector2::AbstractVector)
+
+    Returns true if two sets have the same elements up to graph isomorphisms. False otherwise.
+
+# Arguments (Required)
+- `connectivity_vector1::AbstractVector`: Vector containing connectivity matrices
+- `connectivity_vector2::AbstractVector`: Vector containing connectivity matrices. Must have the same length as the first vector
+
+# Returns
+- `result::Bool`: True if two sets are equal. False otherwise. This may include the case where a set is degenerate
+"""
+function is_same_set_of_networks(connectivity_vector1::AbstractVector, connectivity_vector2::AbstractVector)
+    # Test 1: compare sizes of each set. If they are different, return false
+    if length(connectivity_vector1) != length(connectivity_vector2)
+        return false
+    end
+
+    # Test 2: exhaustively check if there is a 1-1 map between set elements. This automatically tests if there are redundant elements in each set
+    n = length(connectivity_vector1)
+    identity = zeros(Int64, n, n)
+    for i in 1:n
+        for j in 1:n
+            if is_same_network(connectivity_vector1[i], connectivity_vector2[j])
+                identity[i, j] = 1
+            else
+                identity[i, j] = 0
+            end
+        end
+    end
+    if (all(sum(identity, dims=1) .== 1) && all(sum(identity, dims=2) .== 1))
+        # To have a 1-1 map between sets, every column and row of the identity matrix defined above must have exactly one 1 while the other entries being 0
+        return true
+    else
+        return false
+    end
+end
+
+
+"""
     all_network_additions(connectivity::AbstractMatrix, number_of_edges::Int64)
 
     Returns a vector containing all possible network additions of a network connectivity matrix.
@@ -194,11 +251,59 @@ function count_inputs_by_coherence(connectivity::AbstractMatrix)
     # Go through each row
     for row in eachrow(connectivity)
         node_coherence = calculate_node_coherence(row)
-
-        input_counts.coherent .+= node_coherence.coherent
-        input_counts.incoherent .+= node_coherence.incoherent
+        if node_coherence == "coherent"
+            input_counts.coherent .+= 1
+        elseif node_coherence == "incoherent"
+            input_counts.incoherent .+= 1
+        end
     end
     return input_counts
+end
+
+  
+ """
+   connectivity_to_binary(connectivity::AbstractMatrix)
+
+   Returns a binary representation of a circular network.
+
+A binary representation of a circular interaction network tracks the type of interaction (either positive or negative) around the cycle. The current implementation assigns 1 to a positive interaction and 0 to a negative one. For example, the Goodwin oscillator can be represented as `"011"`, `"101"`, or `"110"`. If the nodes are assumed to be indistinguishable, the representation is not unique. Among possible equivalent representations, the smallest number is returned; for the above example, `"011"`.
+
+# Arguments (Required)
+- `connectivity::AbstractMatrix`: Connectivity matrix of a circular interaction network
+
+# Returns
+- `feedback_loop_in_binary::String`: Binary presentation of a circular interaction network. `nothing` if the input is not a directed circular graph
+"""
+function connectivity_to_binary(connectivity::AbstractMatrix)
+    if !is_directed_cycle_graph(connectivity)
+        # Input must be a directed cycle graph to have a binary representation
+        return
+    end
+
+    binary = ""
+    i_next = 1
+    while true
+        i_curr = i_next
+        i_next = findfirst(item -> item == 1, abs.(connectivity[:, i_next]))
+
+        if connectivity[i_next, i_curr] == 1
+            binary *= '1'
+        elseif connectivity[i_next, i_curr] == -1
+            binary *= '0'
+        end
+
+        if i_next == 1
+            # Stop traversal upon return to the starting node
+            break
+        end
+    end
+
+    equivalent_binaries = find_all_binary_circular_permutations(binary)
+    _, i = findmin(parse.(Int64, equivalent_binaries, base=2))
+    # Find the smallest one from the binary numbers that represent the same network
+    feedback_loop_in_binary = equivalent_binaries[i]
+
+    return feedback_loop_in_binary
 end
 
 
@@ -225,108 +330,149 @@ function is_negative_feedback_network(connectivity::AbstractMatrix)
         return true
     end
 end
+    
+ """
+   find_all_binary_circular_permutations(feedback_loop_in_binary::String)
+
+   Returns a vector containing all unique circular permutations of a given binary representation.
+
+# Arguments (Required)
+- `feedback_loop_in_binary::String`: Binary representation of a circular interaction network.
+
+# Returns
+- `result::AbstractVector`: Vector containing all unique circular permutations of given representation
+"""
+function find_all_binary_circular_permutations(feedback_loop_in_binary::String)
+    return unique([join(circshift(split(feedback_loop_in_binary, ""), i)) for i in 1:length(feedback_loop_in_binary)])
+end
+
+
+"""
+   binary_to_connectivity(feedback_loop_in_binary::String)
+
+   Returns the connectivity matrix corresponding to the given binary representation of a circular interaction network.
+
+# Arguments (Required)
+- `feedback_loop_in_binary::String`: Binary representation of a circular interaction network.
+
+# Returns
+- `connectivity::AbstractMatrix`: Connectivity matrix corresponding to the binary representation of a circular interaction network
+"""
+function binary_to_connectivity(feedback_loop_in_binary::String)
+    n = length(feedback_loop_in_binary)
+
+    connectivity = zeros(Int64, n, n)
+
+    for i in 1:n
+        connectivity[mod(i, n) + 1, i] = (feedback_loop_in_binary[i] == '1' ? 1 : -1)
+    end
+
+    return connectivity
+end
 
 
 """
     calculate_node_coherence(node_inputs::AbstractVector)
 
-    Returns the coherence of a node given its inputs as a DataFrame
+    Returns the coherence of a node given its inputs. A coherent node has all inputs with the same sign. An incoherent node has at least one input with a different sign.
 
 # Arguments (Required)
 - `node_inputs::AbstractVector`: Vector containing the inputs of a node
 
 # Returns
-- `coherence::DataFrame`: DataFrame containing the coherence of a node
+- `coherence::String`: Coherence of a node. Either "coherent", "incoherent" or "unknown"
 """
 function calculate_node_coherence(node_inputs::AbstractArray)
+    coherence = "unknown"
+
     n_positive = sum(node_inputs .== 1)
     n_negative = sum(node_inputs .== -1)
 
-    incoherent = min(n_positive, n_negative)
-    coherent = (max(n_positive, n_negative) - incoherent) / 2
-    coherent = floor(Int, coherent)
+    if n_positive == 0 && n_negative > 1 || n_positive > 1 && n_negative == 0
+        coherence = "coherent"
+    elseif n_positive > 0 && n_negative > 0
+        coherence = "incoherent"
+    end
 
-    coherence = DataFrame(coherent = coherent, incoherent = incoherent)
     return coherence
 end
 
 
 """
-    calculate_loop_length_and_type(connectivity::AbstractMatrix, loop_start::AbstractVector)
+   unique_cycle_addition(connectivity::AbstractMatrix)
 
-    Returns the length and type of a feedback loop given its start node.
+   Returns a vector containing all unique single-interaction additions to a circular network. Supports only the cases where the underlying network is circular and a single interaction is added to it.
 
 # Arguments (Required)
-- `connectivity::AbstractMatrix`: Connectivity matrix of a network
-- `loop_start::AbstractVector`: Vector containing the coordinates of the start node of a feedback loop
+- `connectivity::AbstractMatrix`: Connectivity matrix of a circular network
 
 # Returns
-- `loop_properties::DataFrame`: DataFrame containing the length and type of a feedback loop
+- `connectivity_vector::AbstractVector` Vector containing all unique single-interaction additions to a circular network. An empty vector is returned if the given connectivity is not circular
 """
-function calculate_loop_length_and_type(connectivity::AbstractMatrix, loop_start::AbstractVector)
-    nodes = size(connectivity, 1)
-    feedback_sign = connectivity[loop_start...]
-    loop_length = 1
-    loop_type = "unknown"
-    initial_node = loop_start[1]
-    current_node = loop_start[2]
-    next_node = loop_start[2]
-    # Backtrace the loop
-    iterations = 0
-    while next_node != initial_node
-        current_node = next_node
-        next_node = findall(connectivity[next_node, :] .!= 0)[1]
-        feedback_sign *= connectivity[current_node, next_node]
-        loop_length += 1
-        iterations += 1
-        if iterations > nodes
-            error("Loop length is larger than the number of nodes")
+function unique_cycle_addition(connectivity::AbstractMatrix)
+    connectivity_vector = []
+
+    feedback_loop_in_binary = connectivity_to_binary(connectivity)
+    binaries = find_all_binary_circular_permutations(feedback_loop_in_binary)
+    # The 1st node can get an additional input from one of the 1st, 2nd, ..., n-1-th nodes
+
+    for binary in binaries
+        matrix = binary_to_connectivity(binary)
+
+        for i in 1:length(binary) - 1
+            for type in [-1, 1]
+                addition = copy(matrix)
+                addition[1, i] = type
+
+                push!(connectivity_vector, addition)
+            end
         end
     end
 
-    if feedback_sign == 1
-        loop_type = "positive"
-    elseif feedback_sign == -1
-        loop_type = "negative"
-    end
-    loop_properties = DataFrame(length = loop_length, type = loop_type)
-    return loop_properties
+    return connectivity_vector
 end
 
 
 """
-    classify_single_addition(reference_connectivity::AbstractMatrix, one_added_connectivity::AbstractMatrix)
+   find_all_cycles_and_types(connectivity::AbstractMatrix)
 
-    Returns the coherence and feedback loop type of a single addition to a reference network.
+   Returns a vector containing all unique cycles in a connectivity matrix. Each cycle is represented by a vector of nonduplicate node indices that define a cycle.a vector containing all unique cycles that can be found in a connectivity matrix. For example, if a Goodwin oscillator with a self-loop ([1 0 1; 1 0 0; 0 -1 0]) is given as an input, vectors [[1], [1, 2, 3]] and ["positive", "negative"] will be returned.
 
 # Arguments (Required)
-- `reference_connectivity::AbstractMatrix`: Connectivity matrix used as a reference for comparison
-- `one_added_connectivity::AbstractMatrix`: Connectivity matrix with one addition with respect to the reference connectivity
+- `connectivity::AbstractMatrix`: Connectivity matrix of a network
 
 # Returns
-- `addition_properties::DataFrame`: DataFrame containing the coherence and feedback loop type of a single addition to a reference network
+- `all_cycles::AbstractVector`: Vector containing vectors of node indices
+- `all_types::AbstractVector`: Vector containing types of respective cycles in `all_cycles`
 """
-function classify_single_addition(reference_connectivity::AbstractMatrix, one_added_connectivity::AbstractMatrix)
-    # Check that the reference connectivity is a negative feedback network
-    if !is_negative_feedback_network(reference_connectivity)
-        error("Reference connectivity should be a negative feedback network")
-    end
-    added_edge_indices = findall(reference_connectivity .!= one_added_connectivity)[1]
-    loop_start = [added_edge_indices[1], added_edge_indices[2]]
-    loop_properties = calculate_loop_length_and_type(one_added_connectivity, loop_start)
+function find_all_cycles_and_types(connectivity::AbstractMatrix)
+    all_cycles = []
+    all_types = []
+    n = size(connectivity)[1]
 
-    node_inputs = one_added_connectivity[added_edge_indices[1], :]
-    node_coherence = calculate_node_coherence(node_inputs)
-    if node_coherence.coherent[1] == 1 && node_coherence.incoherent[1] == 0
-        loop_coherence = "coherent"
-    elseif node_coherence.incoherent[1] == 1 && node_coherence.coherent[1] == 0
-        loop_coherence = "incoherent"
-    else
-        loop_coherence = "unknown"
-    end
+    # Following for statements iterate over all possible cycles in a complete directed graph (self-loops allowed) of the same size as the given graph
+    for cycle_length in 1:n
+        # Iterate over lengths of cycles
+        for c in combinations(1:n, cycle_length)
+            # With a given cycle length, iterate over possible combinations of nodes
+            for p in permutations(c[2:cycle_length])
+                # With a given combination of nodes, iterate over its all circular permutations
 
-    addition_properties = DataFrame(loop_coherence = loop_coherence, 
-                                    loop_length = loop_properties.length, 
-                                    loop_type = loop_properties.type)
-    return addition_properties
+                path_candidate = vcat(c[1], p, c[1])
+                # Note that the start (end) point of a cycle is repeated in the above list
+
+                index_start_node = path_candidate[1:end - 1]
+                index_end_node = path_candidate[2:end]
+
+                path_in_given_connectivity = connectivity[CartesianIndex.(index_end_node, index_start_node)]
+
+                if all(path_in_given_connectivity .!= 0)
+                    # When possible path exists in given connectivity
+                    push!(all_cycles, index_start_node)
+                    push!(all_types, (prod(path_in_given_connectivity) == 1 ? "positive" : "negative"))
+                end
+            end
+        end
+    end
+    return all_cycles, all_types
 end

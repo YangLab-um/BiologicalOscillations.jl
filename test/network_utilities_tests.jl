@@ -183,103 +183,121 @@ for network in non_nf_networks
 end
 
 # Test node_coherence
+node_inputs = [0 0 0 0 0 0]
+node_coherence = calculate_node_coherence(node_inputs)
+@test node_coherence == "unknown"
+
 node_inputs = [0 0 1 -1 0 0]
 node_coherence = calculate_node_coherence(node_inputs)
-@test node_coherence.coherent[1] == 0
-@test node_coherence.incoherent[1] == 1
+@test node_coherence == "incoherent"
 
 node_inputs = [0 0 1 -1 0 1]
 node_coherence = calculate_node_coherence(node_inputs)
-@test node_coherence.coherent[1] == 0
-@test node_coherence.incoherent[1] == 1
+@test node_coherence == "incoherent"
 
 node_inputs = [1 0 1 -1 0 1]
 node_coherence = calculate_node_coherence(node_inputs)
-@test node_coherence.coherent[1] == 1
-@test node_coherence.incoherent[1] == 1
+@test node_coherence == "incoherent"
 
 node_inputs = [1 0 1 1 0 1]
 node_coherence = calculate_node_coherence(node_inputs)
-@test node_coherence.coherent[1] == 2
-@test node_coherence.incoherent[1] == 0
+@test node_coherence == "coherent"
 
 node_inputs = [1 -1 1 1 -1 1]
 node_coherence = calculate_node_coherence(node_inputs)
-@test node_coherence.coherent[1] == 1
-@test node_coherence.incoherent[1] == 2
+@test node_coherence == "incoherent"
 
 node_inputs = [0 0 1 0 0 0]
 node_coherence = calculate_node_coherence(node_inputs)
-node_coherence = calculate_node_coherence(node_inputs)
-@test node_coherence.coherent[1] == 0
-@test node_coherence.incoherent[1] == 0
+@test node_coherence == "unknown"
 
-# Test calculate_loop_length_and_type
+# Test is_directed_cycle_graph function
+@test is_directed_cycle_graph([0 1 0; 0 0 1; 1 0 0])  # forward cycle
+@test is_directed_cycle_graph([0 0 1; 1 0 0; 0 1 0])  # backward cycle
+@test !is_directed_cycle_graph([0 1 0; 0 0 1; 1 0 1])  # two cycles case 1
+@test !is_directed_cycle_graph([0 0 1; 1 0 1; 0 1 0])  # two cycles case 2
+@test !is_directed_cycle_graph([0 1 0; 0 0 1; 0 0 0])  # dangling end
+
+# Test is_same_set_of_networks
+@test is_same_set_of_networks([[1 0 1; 1 0 0; 0 1 0], [0 0 1; 1 -1 0; 0 1 0]], [[1 0 1; 1 0 0; 0 1 0], [-1 0 1; 1 0 0; 0 1 0]])  # same sets up to permutations
+@test !is_same_set_of_networks([[1 0 1; 1 0 0; 0 1 0], [0 0 1; 1 -1 0; 0 1 0]], [[1 0 1; 1 0 0; 0 1 0]])  # inputs with different lengths
+@test !is_same_set_of_networks([[1 0 1; 1 0 0; 0 1 0], [0 0 1; 1 1 0; 0 1 0]], [[1 0 1; 1 0 0; 0 1 0], [-1 0 1; 1 0 0; 0 1 0]])  # duplicate elements (up to permutations) in one set
+
+# Test connectivity_to_binary and binary_to_connectivity functions
+t0 = [0 0 -1; -1 0 0; 0 -1 0]
+t2 = [0 0 -1; 1 0 0; 0 1 0]
+s1 = [0 0 0 -1; -1 0 0 0; 0 -1 0 0; 0 0 1 0]
+s3 = [0 0 0 -1; 1 0 0 0; 0 1 0 0; 0 0 1 0]
+p2 = [0 0 0 0 -1; -1 0 0 0 0; 0 -1 0 0 0; 0 0 1 0 0; 0 0 0 1 0]
+
+@test connectivity_to_binary(t0) == "000"
+@test connectivity_to_binary(t2) == "011"
+@test connectivity_to_binary(s1) == "0001"
+@test connectivity_to_binary(s3) == "0111"
+@test connectivity_to_binary(p2) == "00011"
+
+@test is_same_network(binary_to_connectivity("000"), t0)
+
+@test is_same_network(binary_to_connectivity("011"), t2)
+@test is_same_network(binary_to_connectivity("101"), t2)
+@test is_same_network(binary_to_connectivity("110"), t2)
+
+@test is_same_network(binary_to_connectivity("0001"), s1)
+@test is_same_network(binary_to_connectivity("0010"), s1)
+@test is_same_network(binary_to_connectivity("0100"), s1)
+@test is_same_network(binary_to_connectivity("1000"), s1)
+
+@test is_same_network(binary_to_connectivity("0111"), s3)
+@test is_same_network(binary_to_connectivity("1011"), s3)
+@test is_same_network(binary_to_connectivity("1101"), s3)
+@test is_same_network(binary_to_connectivity("1110"), s3)
+
+@test is_same_network(binary_to_connectivity("00011"), p2)
+@test is_same_network(binary_to_connectivity("00110"), p2)
+@test is_same_network(binary_to_connectivity("01100"), p2)
+@test is_same_network(binary_to_connectivity("10001"), p2)
+@test is_same_network(binary_to_connectivity("11000"), p2)
+
+@test !is_same_network(binary_to_connectivity("00101"), p2)
+@test !is_same_network(binary_to_connectivity("01001"), p2)
+@test !is_same_network(binary_to_connectivity("01010"), p2)
+@test !is_same_network(binary_to_connectivity("10010"), p2)
+@test !is_same_network(binary_to_connectivity("10100"), p2)
+
+# Test find_all_binary_circular_permutations function
+@test Set(find_all_binary_circular_permutations("110")) == Set(["110", "101", "011"])
+@test Set(find_all_binary_circular_permutations("1010")) == Set(["1010", "0101"])
+@test Set(find_all_binary_circular_permutations("1010")) != Set(["1010", "0101", "0011", "0110", "1100", "1001"])
+
+# Test the unique_network_additions and unique_cycle_addition functions
+@test is_same_set_of_networks(unique_network_additions(t0, 1), unique_cycle_addition(t0))
+@test is_same_set_of_networks(unique_network_additions(t2, 1), unique_cycle_addition(t2))
+@test is_same_set_of_networks(unique_network_additions(s1, 1), unique_cycle_addition(s1))
+@test is_same_set_of_networks(unique_network_additions(s3, 1), unique_cycle_addition(s3))
+@test is_same_set_of_networks(unique_network_additions(p2, 1), unique_cycle_addition(p2))
+
+# Test find_all_cycles_and_types. Note that the outputs of find_all_cycles_and_types are sorted by the cycle length (ascending order)
 connectivity = [0 0 0 1 -1;-1 0 0 0 0;0 -1 0 0 0;0 0 -1 0 0;0 0 0 -1 0]
-loop_start = [1, 4]
-loop_properties = calculate_loop_length_and_type(connectivity, loop_start)
-@test loop_properties.length[1] == 4
-@test loop_properties.type[1] == "negative"
+cycle, type = find_all_cycles_and_types(connectivity)
+@test cycle[1] == [1, 2, 3, 4]
+@test type[1] == "negative"
 
 connectivity = [1 0 0 0 -1;-1 0 0 0 0;0 -1 0 0 0;0 0 -1 0 0;0 0 0 -1 0]
-loop_start = [1, 1]
-loop_properties = calculate_loop_length_and_type(connectivity, loop_start)
-@test loop_properties.length[1] == 1
-@test loop_properties.type[1] == "positive"
+cycle, type = find_all_cycles_and_types(connectivity)
+@test cycle[1] == [1]
+@test type[1] == "positive"
 
 connectivity = [0 0 0 0 -1;-1 0 0 1 0;0 -1 0 0 0;0 0 -1 0 0;0 0 0 -1 0]
-loop_start = [2, 4]
-loop_properties = calculate_loop_length_and_type(connectivity, loop_start)
-@test loop_properties.length[1] == 3
-@test loop_properties.type[1] == "positive"
+cycle, type = find_all_cycles_and_types(connectivity)
+@test cycle[1] == [2, 3, 4]
+@test type[1] == "positive"
 
 connectivity = [0 0 0 0 -1;-1 0 0 0 0;0 -1 0 1 0;0 0 -1 0 0;0 0 0 -1 0]
-loop_start = [3, 4]
-loop_properties = calculate_loop_length_and_type(connectivity, loop_start)
-@test loop_properties.length[1] == 2
-@test loop_properties.type[1] == "negative"
-
+cycle, type = find_all_cycles_and_types(connectivity)
+@test cycle[1] == [3, 4]
+@test type[1] == "negative"
 
 connectivity = [0 0 0 0 -1;-1 0 0 0 0;0 -1 0 -1 0;0 0 -1 0 0;0 0 0 -1 0]
-loop_start = [3, 4]
-loop_properties = calculate_loop_length_and_type(connectivity, loop_start)
-@test loop_properties.length[1] == 2
-@test loop_properties.type[1] == "positive"
-
-# Test classify_single_addition
-reference_connectivity = [0 0 -1;-1 0 0;0 -1 0]
-one_add_connectivity = [1 0 -1;-1 0 0;0 -1 0]
-addition_properties = classify_single_addition(reference_connectivity, one_add_connectivity)
-@test addition_properties.loop_type[1] == "positive"
-@test addition_properties.loop_length[1] == 1
-@test addition_properties.loop_coherence[1] == "incoherent"
-
-one_add_connectivity = [-1 0 -1;-1 0 0;0 -1 0]
-addition_properties = classify_single_addition(reference_connectivity, one_add_connectivity)
-@test addition_properties.loop_type[1] == "negative"
-@test addition_properties.loop_length[1] == 1
-@test addition_properties.loop_coherence[1] == "coherent"
-
-one_add_connectivity = [0 1 -1;-1 0 0;0 -1 0]
-addition_properties = classify_single_addition(reference_connectivity, one_add_connectivity)
-@test addition_properties.loop_type[1] == "negative"
-@test addition_properties.loop_length[1] == 2
-@test addition_properties.loop_coherence[1] == "incoherent"
-
-one_add_connectivity = [0 -1 -1;-1 0 0;0 -1 0]
-addition_properties = classify_single_addition(reference_connectivity, one_add_connectivity)
-@test addition_properties.loop_type[1] == "positive"
-@test addition_properties.loop_length[1] == 2
-@test addition_properties.loop_coherence[1] == "coherent"
-
-reference_connectivity = [0 0 0 0 -1;-1 0 0 0 0;0 -1 0 0 0;0 0 -1 0 0;0 0 0 -1 0]
-one_add_connectivity = [0 0 0 1 -1;-1 0 0 0 0;0 -1 0 0 0;0 0 -1 0 0;0 0 0 -1 0]
-addition_properties = classify_single_addition(reference_connectivity, one_add_connectivity)
-@test addition_properties.loop_type[1] == "negative"
-@test addition_properties.loop_length[1] == 4
-@test addition_properties.loop_coherence[1] == "incoherent"
-
-# catch error
-reference_connectivity_not_nf = [0 0 -1;-1 0 0; 0 -1 1]
-one_add_connectivity = [1 0 -1;-1 0 0;0 -1 0]
-@test_throws ErrorException classify_single_addition(reference_connectivity_not_nf, one_add_connectivity)
+cycle, type = find_all_cycles_and_types(connectivity)
+@test cycle[1] == [3, 4]
+@test type[1] == "positive"
