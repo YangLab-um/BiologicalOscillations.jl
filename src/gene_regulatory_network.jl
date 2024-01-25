@@ -17,8 +17,8 @@ function gene_regulatory_network(connectivity::AbstractMatrix)
     # Number of edges
     E = count(!iszero, connectivity)
     @variables t
-    @species (m(t))[collect(1:N)]
-    @species (X(t))[collect(1:N)]
+    @species (m(t))[1:N]
+    @species (X(t))[1:N]
     @parameters α[1:N], β[1:N], δ[1:N], γ[1:E], κ[1:E], η[1:E]
     rxs = Reaction[]
     # Node-specific reactions for mRNA and Protein

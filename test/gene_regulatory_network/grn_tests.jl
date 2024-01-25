@@ -11,8 +11,8 @@ using BiologicalOscillations, Catalyst, ModelingToolkit, DifferentialEquations
 # Test that gene_regulatory_network creates the correct ReactionSystems
 # Repressilator
 @variables t
-@species (m(t))[collect(1:3)]
-@species (X(t))[collect(1:3)]
+@species (m(t))[1:3]
+@species (X(t))[1:3]
 @parameters α[1:3], β[1:3], δ[1:3], γ[1:3], κ[1:3], η[1:3]
 
 true_reactions = [Reaction(1 - α[1]*m[1], nothing, [m[1]]), 

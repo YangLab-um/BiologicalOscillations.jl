@@ -11,7 +11,7 @@ using DataFrames, Peaks
 @test_throws DomainError protein_interaction_network([0 1; 3 0])
 ## Correct reactions - Repressilator
 @variables t
-@species (X(t))[collect(1:3)]
+@species (X(t))[1:3]
 @parameters α[1:3], β[1:3], γ[1:3], κ[1:3], η[1:3]
 
 true_reactions = [Reaction(α[1]*(1.0 - X[1]), nothing, [X[1]]), 
