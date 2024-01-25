@@ -90,7 +90,7 @@ function split_enzyme_network(connectivity::AbstractMatrix)
     # Does the network need a constitutive kinase?
     constitutive_kinase_needed = needs_constitutive_kinase(connectivity)
     @variables t
-    @species (X(t))[collect(1:N)]
+    @species (X(t))[1:N]
     if constitutive_kinase_needed
         @parameters k_b[1:N], k_u[1:N], n[1:N], κ_tot[1:N], η, K̃, P̃
     else

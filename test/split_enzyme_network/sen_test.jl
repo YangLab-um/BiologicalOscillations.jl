@@ -59,7 +59,7 @@ result = BiologicalOscillations.needs_constitutive_kinase(doesnt_need_kinase_3)
 @test_throws DomainError split_enzyme_network([0 1;3 -1])
 ## Correct reactions - Repressilator
 @variables t
-@species (X(t))[collect(1:3)]
+@species (X(t))[1:3]
 @parameters k_b[1:3], k_u[1:3], n[1:3], κ_tot[1:3], η, P̃
 
 true_reactions = []
