@@ -6,6 +6,11 @@ model = protein_interaction_network(connectivity)
 parameter_values = [1.0, 44.3, 0.13, 75.3, 2.3, 0.10, 2472.4, 0.27, 3.0, 442.2, 0.91, 4.8, 4410.0, 0.29, 3.3]
 parameter_sets = transpose(repeat(parameter_values, 1, 3))
 initial_conditions = [0.5*ones(3) for i=1:3]
+
+α = parameter_values[1:2:5]
+β = parameter_values[2:2:6]
+γ = parameter_values[7:3:13]
+
 equilibration_times = [pin_timescale(α, β, γ) for i=1:3]
 
 equilibration_data = equilibrate_ODEs(model, parameter_sets, initial_conditions, equilibration_times)
