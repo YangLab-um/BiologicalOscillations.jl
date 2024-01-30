@@ -174,7 +174,7 @@ Default parameter limits for the generation of sen parameter sets. Keys are the 
 """
 DEFAULT_SEN_PARAMETER_LIMITS = Dict(
     "k_b" => (1e-2, 1e0), 
-    "k_u" => (1e-3, 1e-3), 
+    "k_u" => (1e-3, 1e3), 
     "n" => (2.0, 4.0), 
     "κ_tot" => (1e-3, 1e2), 
     "η" => (1e-1, 1e1), 

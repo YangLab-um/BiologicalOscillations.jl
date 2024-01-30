@@ -201,9 +201,9 @@ for (idx, row) in enumerate(eachrow(all_params))
 end
 
 # Test that parameters are truly oscillatory and non-oscillatory
-# Values taken from run on 01/11/2024
-samples = 1500
-random_seed = 9283
+# Values taken from run on 01/29/2024
+samples = 10000
+random_seed = 1832
 connectivity_T2_12 = [0 0 1; 1 0 0; 0 -1 1]
 hyperparameters = deepcopy(DEFAULT_SEN_HYPERPARAMETERS)
 hyperparameters["random_seed"] = random_seed
@@ -230,7 +230,7 @@ for selected_idx in 1:5
     peak_number_found[selected_idx] = peak_num
 end
 
-expected_peaks = [51, 5, 569, 14, 3]
+expected_peaks = [1770.0, 185.0, 285.0, 2335.0, 19.0]
 @test peak_number_found == expected_peaks
 # Test that parameters are truly non-oscillatory
 non_oscillatory_params = result["parameter_sets"]["non_oscillatory"]
