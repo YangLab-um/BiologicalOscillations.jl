@@ -131,7 +131,7 @@ end
 
 
 """
-    pin_parameter_sets(model::ReactionSystem, samples::Int; dimensionless_time=true, parameter_limits=Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), "γ" => (1e2, 1e4), "κ" => (0.2, 1.0), "η" => (1.0, 5.0)), sampling_scales=Dict("α" => "log", "β" => "log", "γ" => "log", "κ" => "linear", "η" => "linear"), sampling_style="lhc")
+    pin_parameter_sets(model::ReactionSystem, samples::Int; dimensionless_time=true, parameter_limits=DEFAULT_PIN_PARAMETER_LIMITS, sampling_scales=DEFAULT_PIN_SAMPLING_SCALES, sampling_style="lhc")
 
 Creates an array of parameter sets for a protein interaction network model.
     
@@ -142,18 +142,11 @@ Creates an array of parameter sets for a protein interaction network model.
 
 # Arguments (Optional)
 - `dimensionless_time::Bool`: If `true`, α₁ is set to 1.0 for all parameter sets, making time dimensionless. Default value is `true`
-- `parameter_limits::Dict`: Dictionary encoding the lower and upper limit of each parameter (in the form of a tuple). Default value is
-```julia
-parameter_limits = Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), 
-                        "γ" => (1e2, 1e4), "κ" => (0.2, 1.0), "η" => (1.0, 5.0))
-```
-- `sampling_scales::Dict`: Dictionary with strings encoding the sampling scale for each individual parameter in a model. Accepted strings are "linear" and "log". Default value is
-```julia
-sampling_scales = Dict("α" => "log", "β" => "log", "γ" => "log", "κ" => "linear", "η" => "linear")
-```
+- `parameter_limits::Dict`: Dictionary encoding the lower and upper limit of each parameter (in the form of a tuple). For default value see `DEFAULT_PIN_PARAMETER_LIMITS`
+- `sampling_scales::Dict`: Dictionary with strings encoding the sampling scale for each individual parameter in a model. Accepted strings are "linear" and "log". For default value see `DEFAULT_PIN_SAMPLING_SCALES`
 - `sampling_style::String`: Sampling style of the algorithm. Accepted strings are "lhc" and "random". Default value is "lhc".
 """
-function pin_parameter_sets(model::ReactionSystem, samples::Int, random_seed::Int; dimensionless_time=true, parameter_limits=Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), "γ" => (1e2, 1e4), "κ" => (0.2, 1.0), "η" => (1.0, 5.0)), sampling_scales=Dict("α" => "log", "β" => "log", "γ" => "log", "κ" => "linear", "η" => "linear"), sampling_style="lhc")
+function pin_parameter_sets(model::ReactionSystem, samples::Int, random_seed::Int; dimensionless_time=true, parameter_limits=DEFAULT_PIN_PARAMETER_LIMITS, sampling_scales=DEFAULT_PIN_SAMPLING_SCALES, sampling_style="lhc")
     N, E = pin_nodes_edges(model)
 
     limits = []
