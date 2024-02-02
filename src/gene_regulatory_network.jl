@@ -138,7 +138,7 @@ end
 
 
 """
-    grn_parameter_sets(model::ReactionSystem, samples::Int; dimensionless_time=true, parameter_limits=Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), "δ" => (1e-2, 1e2), "γ" => (1e2, 1e4), "κ" => (0.2, 1.0), "η" => (1.0, 5.0)), sampling_scales=Dict("α" => "log", "β" => "log", "δ" => "log", "γ" => "log", "κ" => "linear", "η" => "linear"), sampling_style="lhc")
+    grn_parameter_sets(model::ReactionSystem, samples::Int; dimensionless_time=true, parameter_limits=DEFAULT_GRN_PARAMETER_LIMITS, sampling_scales=DEFAULT_GRN_SAMPLING_SCALES, sampling_style="lhc")
 
 Generate a set of parameter values for a gene regulatory network model.
 
@@ -149,18 +149,11 @@ Generate a set of parameter values for a gene regulatory network model.
 
 # Arguments (Optional)
 - `dimensionless_time::Bool=true`: If true, α₁ is set to 1.0 as well as the first N κ's with N=number of nodes. This is done to make the timescale of the system dimensionless.
-- `parameter_limits::Dict`: Dict with keys "α", "β", "δ", "γ", "κ", "η" and values of tuples with lower and upper limits for each parameter. Default values are: 
-```julia
-parameter_limits = Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), "δ" => (1e-2, 1e2),
-                        "γ" => (1e2, 1e4), "κ" => (0.2, 1.0), "η" => (1.0, 5.0))
-```
-- `sampling_scales::Dict`: Dict with keys "α", "β", "δ", "γ", "κ", "η" and values of strings with the sampling scale for each parameter. Default values are: 
-```julia
-sampling_scales = Dict("α" => "log", "β" => "log", "δ" => "log", "γ" => "log", "κ" => "linear", "η" => "linear")
-```
+- `parameter_limits::Dict`: Dict with keys "α", "β", "δ", "γ", "κ", "η" and values of tuples with lower and upper limits for each parameter. For default value see `DEFAULT_GRN_PARAMETER_LIMITS`.
+- `sampling_scales::Dict`: Dict with keys "α", "β", "δ", "γ", "κ", "η" and values of strings with the sampling scale for each parameter. For default value see `DEFAULT_GRN_SAMPLING_SCALES`.
 - `sampling_style::String="lhc"`: Sampling style. Options are "lhc" for latin hypercube sampling and "random" for random sampling.
 """
-function grn_parameter_sets(model::ReactionSystem, samples::Int, random_seed::Int; dimensionless_time=true, parameter_limits=Dict("α" => (1e-2, 1e2), "β" => (1e-2, 1e2), "δ" => (1e-2, 1e2), "γ" => (1e-2, 1e2), "κ" => (0.2, 1.0), "η" => (1.0, 5.0)), sampling_scales=Dict("α" => "log", "β" => "log", "δ" => "log", "γ" => "log", "κ" => "linear", "η" => "linear"), sampling_style="lhc")
+function grn_parameter_sets(model::ReactionSystem, samples::Int, random_seed::Int; dimensionless_time=true, parameter_limits=DEFAULT_GRN_PARAMETER_LIMITS, sampling_scales=DEFAULT_GRN_SAMPLING_SCALES, sampling_style="lhc")
     N, E = grn_nodes_edges(model)
 
     limits = []
