@@ -24,7 +24,8 @@ function gene_regulatory_network(connectivity::AbstractMatrix)
     # Node-specific reactions for mRNA and Protein
     for i=1:size(connectivity, 1)
         # mRNA
-        push!(rxs, Reaction(1 - α[i]*m[i], nothing, [m[i]]))
+        push!(rxs, Reaction(1, nothing, [m[i]]))
+        push!(rxs, Reaction(α[i], [m[i]], nothing))
         # Protein
         push!(rxs, Reaction(β[i]*m[i], nothing, [X[i]]))
         push!(rxs, Reaction(δ[i], [X[i]], nothing))
