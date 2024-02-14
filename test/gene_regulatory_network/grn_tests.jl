@@ -15,13 +15,16 @@ using BiologicalOscillations, Catalyst, ModelingToolkit, DifferentialEquations
 @species (X(t))[1:3]
 @parameters α[1:3], β[1:3], δ[1:3], γ[1:3], κ[1:3], η[1:3]
 
-true_reactions = [Reaction(1 - α[1]*m[1], nothing, [m[1]]), 
+true_reactions = [Reaction(1, nothing, [m[1]]), 
+                  Reaction(α[1], [m[1]], nothing),
                   Reaction(β[1]*m[1], nothing, [X[1]]),
                   Reaction(δ[1], [X[1]], nothing),
-                  Reaction(1 - α[2]*m[2], nothing, [m[2]]), 
+                  Reaction(1, nothing, [m[2]]), 
+                  Reaction(α[2], [m[2]], nothing),
                   Reaction(β[2]*m[2], nothing, [X[2]]),
                   Reaction(δ[2], [X[2]], nothing),
-                  Reaction(1 - α[3]*m[3], nothing, [m[3]]), 
+                  Reaction(1, nothing, [m[3]]), 
+                  Reaction(α[3], [m[3]], nothing),
                   Reaction(β[3]*m[3], nothing, [X[3]]),
                   Reaction(δ[3], [X[3]], nothing),
                   Reaction(hillr(abs(X[3]),γ[1],κ[1],η[1]), nothing, [m[1]]),
@@ -34,13 +37,16 @@ generated_repressilator = gene_regulatory_network([0 0 -1;-1 0 0;0 -1 0])
 @test reactions(generated_repressilator) == reactions(true_repressilator)
 
 # Goodwin
-true_reactions = [Reaction(1 - α[1]*m[1], nothing, [m[1]]), 
+true_reactions = [Reaction(1, nothing, [m[1]]), 
+                  Reaction(α[1], [m[1]], nothing),
                   Reaction(β[1]*m[1], nothing, [X[1]]),
                   Reaction(δ[1], [X[1]], nothing),
-                  Reaction(1 - α[2]*m[2], nothing, [m[2]]), 
+                  Reaction(1, nothing, [m[2]]), 
+                  Reaction(α[2], [m[2]], nothing),
                   Reaction(β[2]*m[2], nothing, [X[2]]),
                   Reaction(δ[2], [X[2]], nothing),
-                  Reaction(1 - α[3]*m[3], nothing, [m[3]]), 
+                  Reaction(1, nothing, [m[3]]), 
+                  Reaction(α[3], [m[3]], nothing),
                   Reaction(β[3]*m[3], nothing, [X[3]]),
                   Reaction(δ[3], [X[3]], nothing),
                   Reaction(hill(abs(X[3]),γ[1],κ[1],η[1]), nothing, [m[1]]),
