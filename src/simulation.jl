@@ -236,17 +236,25 @@ Generates a dataframe with the results of the simulation and equilibration of a 
 - `simulation_times::AbstractVector`: Array of simulation times
 - `oscillatory_status::AbstractVector`: Array of oscillatory status for each parameter set
 - `hyperparameters::Dict`: Dictionary of hyperparameters for the simulation
+
+# Arguments (Optional)
+- `filter_results::Bool`: Whether to filter the results based on equilibration's final velocity. Default value `true`
 """
 function generate_find_oscillations_output(model::ReactionSystem, parameter_sets::AbstractArray, 
                                            equilibration_data::Dict, equilibration_times::AbstractVector, 
                                            simulation_data::Dict, simulation_times::AbstractVector, 
-                                           oscillatory_status::AbstractVector, hyperparameters::Dict)
+                                           oscillatory_status::AbstractVector, hyperparameters::Dict;
+                                           filter_results=true)
     result = Dict()
     samples = size(parameter_sets, 1)
     N = length(species(model))
     velocity = equilibration_data["final_velocity"]
     cutoff = 10 ^ mean(log10.(velocity))
-    filter = velocity .> cutoff
+    if filter_results
+        filter = velocity .> cutoff
+    else
+        filter = ones(Bool, samples)
+    end
     # Model
     if haskey(hyperparameters["simulation_output"], "model")
         if hyperparameters["simulation_output"]["model"] == true
@@ -295,6 +303,18 @@ function generate_find_oscillations_output(model::ReactionSystem, parameter_sets
                 fixed_point_dataframe = DataFrame(fixed_point_params_summary)
                 column_order = vcat(["parameter_index"], parameter_names)
                 result["parameter_sets"]["non_oscillatory"] = select(fixed_point_dataframe, column_order)
+            end
+        end
+        if haskey(hyperparameters["simulation_output"]["parameter_sets"], "all")
+            if hyperparameters["simulation_output"]["parameter_sets"]["all"] == true
+                all_params_summary = Dict()
+                all_params_summary["parameter_index"] = collect(1:1:samples)
+                for i=1:length(parameter_map)
+                    all_params_summary["$(parameter_names[i])"] = parameter_sets[:,i]
+                end
+                all_dataframe = DataFrame(all_params_summary)
+                column_order = vcat(["parameter_index"], parameter_names)
+                result["parameter_sets"]["all"] = select(all_dataframe, column_order)
             end
         end
     end
@@ -421,4 +441,68 @@ function generate_find_oscillations_output(model::ReactionSystem, parameter_sets
         result["simulation_result"] = DataFrame(simulation_summary)
     end
     return result
+end
+
+
+"""
+    create_random_parameter_set_perturbation(parameter_sets::AbstractArray, perturbation_percentage::Real, random_seed::Int)
+
+Creates a perturbed parameter by randomly choosing a single parameter from each parameter set and increasing it by a percentage of its value.
+
+# Arguments (Required)
+- `parameter_sets::AbstractArray`: Array where each row defines the parameter set for each simulation
+- `perturbation_percentage::Real`: Percentage by which the parameter is perturbed
+- `random_seed::Int`: Seed for the random number generator
+
+# Returns
+- `perturbed_parameter_sets::AbstractArray`: Array of perturbed parameter sets
+"""
+function create_random_parameter_set_perturbation(parameter_sets::AbstractArray, perturbation_percentage::Real, random_seed::Int)
+    Random.seed!(random_seed)
+    number_of_parameters = size(parameter_sets, 2)
+    perturbed_parameter_sets = zeros(size(parameter_sets))
+    for i in axes(parameter_sets, 1)
+        perturbed_set = copy(parameter_sets[i, :])
+        idx = rand(1:number_of_parameters)
+        perturbed_set[idx] = perturbed_set[idx] * (1 + perturbation_percentage)
+        perturbed_parameter_sets[i, :] = perturbed_set
+    end
+    return perturbed_parameter_sets
+end
+
+
+"""
+    process_perturbation_results(find_oscillations_result::Dict, perturbation_result::Dict)
+
+Calculate frequency and amplitude changes between the original and perturbed parameter sets
+
+# Arguments (Required)
+- `find_oscillations_result::Dict`: Results of the original parameter sets generated with [`find_pin_oscillations`](@ref)
+- `perturbation_result::Dict`: Results of the perturbed parameter sets generated with [`simulate_pin_parameter_perturbations`](@ref)
+
+# Returns
+- `perturbation_analysis::DataFrame`: DataFrame containing the frequency and amplitude changes between the original and perturbed parameter sets
+"""
+function process_perturbation_results(find_oscillations_result::Dict, perturbation_result::Dict)
+    # Average frequency and amplitude across nodes
+    ## Original result
+    oscillatory_df = filter(row -> row["is_oscillatory"] == true, find_oscillations_result["simulation_result"])
+    original_frequency_df = select(oscillatory_df, r"frequency_*")
+    original_amplitude_df = select(oscillatory_df, r"amplitude_*")
+    original_frequencies = mean.(eachrow(original_frequency_df))
+    original_amplitudes = mean.(eachrow(original_amplitude_df))
+    ## Perturbed result
+    perturbed_frequency_df = select(perturbation_result["simulation_result"], r"frequency_*")
+    perturbed_amplitude_df = select(perturbation_result["simulation_result"], r"amplitude_*")
+    perturbed_frequencies = mean.(eachrow(perturbed_frequency_df))
+    perturbed_amplitudes = mean.(eachrow(perturbed_amplitude_df))
+    # Calculate changes
+    freq_change = (perturbed_frequencies .- original_frequencies) ./ original_frequencies
+    amp_change = (perturbed_amplitudes .- original_amplitudes) ./ original_amplitudes
+    # Create dataframe
+    parameter_index = oscillatory_df.parameter_index
+    perturbation_analysis = DataFrame("parameter_index" => parameter_index,
+                                     "frequency_change" => freq_change,
+                                     "amplitude_change" => amp_change)
+    return perturbation_analysis
 end
