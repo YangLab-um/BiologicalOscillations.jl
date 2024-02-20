@@ -314,7 +314,7 @@ function generate_find_oscillations_output(model::ReactionSystem, parameter_sets
                 end
                 all_dataframe = DataFrame(all_params_summary)
                 column_order = vcat(["parameter_index"], parameter_names)
-                result["parameter_sets"]["all"] = select(all_dataframe, column_order)
+                result["parameter_sets"] = select(all_dataframe, column_order)
             end
         end
     end
@@ -472,7 +472,7 @@ end
 
 
 """
-    process_perturbation_results(find_oscillations_result::Dict, perturbation_result::Dict)
+    feature_change_from_perturbation(find_oscillations_result::Dict, perturbation_result::Dict)
 
 Calculate frequency and amplitude changes between the original and perturbed parameter sets
 
@@ -483,7 +483,7 @@ Calculate frequency and amplitude changes between the original and perturbed par
 # Returns
 - `perturbation_analysis::DataFrame`: DataFrame containing the frequency and amplitude changes between the original and perturbed parameter sets
 """
-function process_perturbation_results(find_oscillations_result::Dict, perturbation_result::Dict)
+function feature_change_from_perturbation(find_oscillations_result::Dict, perturbation_result::Dict)
     # Average frequency and amplitude across nodes
     ## Original result
     oscillatory_df = filter(row -> row["is_oscillatory"] == true, find_oscillations_result["simulation_result"])
@@ -501,8 +501,8 @@ function process_perturbation_results(find_oscillations_result::Dict, perturbati
     amp_change = (perturbed_amplitudes .- original_amplitudes) ./ original_amplitudes
     # Create dataframe
     parameter_index = oscillatory_df.parameter_index
-    perturbation_analysis = DataFrame("parameter_index" => parameter_index,
-                                     "frequency_change" => freq_change,
-                                     "amplitude_change" => amp_change)
-    return perturbation_analysis
+    feature_change = DataFrame("parameter_index" => parameter_index,
+                               "frequency_change" => freq_change,
+                               "amplitude_change" => amp_change)
+    return feature_change
 end

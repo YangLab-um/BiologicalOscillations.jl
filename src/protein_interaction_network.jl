@@ -412,13 +412,16 @@ function simulate_pin_parameter_perturbations(find_oscillation_result::Dict, per
         "parameter_sets" => Dict(
             "all" => true,
         )
-    )) 
-    result = generate_find_oscillations_output(model, parameter_sets, equilibration_data, equilibration_times,
-                                               simulation_data, simulation_times, oscillatory_status, custom_output;
-                                               filter_results=false)
+    ))
+    perturbation_result = generate_find_oscillations_output(model, parameter_sets, equilibration_data, equilibration_times,
+                                                            simulation_data, simulation_times, oscillatory_status, custom_output;
+                                                            filter_results=false)
+    # Calculate feature change
+    feature_change = feature_change_from_perturbation(find_oscillation_result, perturbation_result)
+    perturbation_result["feature_change"] = feature_change
     # Link original and perturbation sets via parameter index
-    original_parameter_index = find_oscillation_result["parameter_sets"]["oscillatory"][!, 1]
-    result["simulation_result"]["parameter_index"] = original_parameter_index
-    result["parameter_sets"][!, 1] = original_parameter_index
-    return result
+    original_parameter_index = find_oscillation_result["parameter_sets"]["oscillatory"][!, "parameter_index"]
+    perturbation_result["simulation_result"][!, "parameter_index"] = original_parameter_index
+    perturbation_result["parameter_sets"][!, "parameter_index"] = original_parameter_index
+    return perturbation_result
 end

@@ -9,7 +9,7 @@ export elowitz_2000, guan_2008
 # Simulation
 export generate_parameter_sets, equilibrate_ODEs, simulate_ODEs, calculate_simulation_times
 export calculate_oscillatory_status, generate_find_oscillations_output, create_random_parameter_set_perturbation
-export process_perturbation_results
+export feature_change_from_perturbation
 # Feature calculation
 export calculate_main_frequency, calculate_amplitude, is_ODE_oscillatory
 # Protein interaction network
