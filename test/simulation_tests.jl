@@ -41,8 +41,18 @@ perturbed_parameter_set = create_random_parameter_set_perturbation(parameter_set
 for i in 1:samples
     # Only one parameter should be different and the difference should be the perturbation percentage
     @test sum(perturbed_parameter_set[i, :] .!= parameter_set[i, :]) == 1
-    diff = abs(perturbed_parameter_set[i, :] - parameter_set[i, :])
+    diff = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
     @test diff / parameter_set[i, :] == perturbation_percentage
 end
 
-# TODO: check that keep_constant parameters are respected
+keep_constant = [1]
+perturbed_parameter_set = create_random_parameter_set_perturbation(parameter_set, perturbation_percentage,
+                                                                   random_seed; keep_constant=keep_constant)
+for i in 1:samples
+    # First parameter should be the same
+    @test perturbed_parameter_set[i, keep_constant] == parameter_set[i, keep_constant]
+    # Only one parameter should be different and the difference should be the perturbation percentage
+    @test sum(perturbed_parameter_set[i, :] .!= parameter_set[i, :]) == 1
+    diff = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
+    @test diff / parameter_set[i, :] == perturbation_percentage
+end
