@@ -40,3 +40,20 @@ guan_2008 = @reaction_network Guan_2008 begin
     # Cdk1 deactivation by Wee1
     sqrt(r)*(a_W + hillr(abs(C), b_W, K_W, n_W)), C --> ∅
 end
+
+
+"""
+    kimchi_2020
+Posttranslational oscillator based on [Kimchi et al. 2020](https://www.science.org/doi/10.1126/sciadv.abc1939)
+"""
+kimchi_2020 = @reaction_network Kimchi_2020 begin
+    @species K(t)=0.5 P(t)=0.5
+    # Parameter values estimated from Fig S2A
+    @parameters p_tilde=1e-9 k_bk=1.0 k_tot=1.0 n=2.0 eta_k=1.0 k_uk=1e-3 k_bp=1e-1 p_tot=7.0 m=2.0 eta_p=1.0 k_up=1e-1
+    # Kinase reactions
+    k_bk * ((k_tot - n * K) / (1 + eta_k * (K / (P + p_tilde)))) ^ n, ∅ --> K
+    k_uk, K --> ∅
+    # Phosphatase reactions
+    k_bp * ((p_tot - m * P) / (1 + eta_p * (K / (P + p_tilde)))) ^ m, ∅ --> P
+    k_up, P --> ∅
+end

@@ -29,7 +29,7 @@ function generate_parameter_sets(samples::Int, parameter_limits::AbstractVector,
     scaling_plan = Tuple{Float64,Float64}[]
     for (idx, limits) in enumerate(parameter_limits)
         if sampling_scales[idx] == "linear"
-            scaling_plan = vcat(scaling_plan, [limits])
+            scaling_plan = vcat(scaling_plan, [Tuple(limits)])
         elseif sampling_scales[idx] == "log"
             scaling_plan = vcat(scaling_plan, [(log10(limits[1]), log10(limits[2]))])
         end
