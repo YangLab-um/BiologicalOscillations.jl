@@ -149,7 +149,7 @@ perturbed_parameter_sets = perturbation_result["parameter_sets"]
 
 @test size(perturbed_parameter_sets) == size(original_parameter_sets)
 
-for i in 1:samples_T0
+for i in axes(original_parameter_sets, 1)
     original = Array(original_parameter_sets[i, :])
     perturbed = Array(perturbed_parameter_sets[i, :])
     # First parameter should be the same
