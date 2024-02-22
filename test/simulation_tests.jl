@@ -33,7 +33,7 @@ equilibration_data = equilibrate_ODEs(model, parameter_sets, initial_conditions,
 # Test `create_random_parameter_set_perturbation`
 samples = 1000
 random_seed = 123
-parameter_set = pin_parameter_sets(model, samples, random_seed; dimensionless_time=dimensionless_time)
+parameter_set = pin_parameter_sets(model, samples, random_seed)
 
 perturbation_percentage = 0.01
 perturbed_parameter_set = create_random_parameter_set_perturbation(parameter_set, perturbation_percentage,
@@ -41,8 +41,9 @@ perturbed_parameter_set = create_random_parameter_set_perturbation(parameter_set
 for i in 1:samples
     # Only one parameter should be different and the difference should be the perturbation percentage
     @test sum(perturbed_parameter_set[i, :] .!= parameter_set[i, :]) == 1
-    diff = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
-    @test diff / parameter_set[i, :] == perturbation_percentage
+    difference = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
+    change_idx = findfirst(difference .!= 0)
+    @test sum(difference / parameter_set[i, change_idx]) ≈ perturbation_percentage
 end
 
 keep_constant = [1]
@@ -52,7 +53,39 @@ for i in 1:samples
     # First parameter should be the same
     @test perturbed_parameter_set[i, keep_constant] == parameter_set[i, keep_constant]
     # Only one parameter should be different and the difference should be the perturbation percentage
-    @test sum(perturbed_parameter_set[i, :] .!= parameter_set[i, :]) == 1
-    diff = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
-    @test diff / parameter_set[i, :] == perturbation_percentage
+    difference = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
+    change_idx = findfirst(difference .!= 0)
+    @test sum(difference / parameter_set[i, change_idx]) ≈ perturbation_percentage
 end
+
+# Test `feature_change_from_perturbation`
+find_oscillations_result = Dict(
+    "simulation_result" => DataFrame(Dict(
+        "parameter_index" => [7, 8, 9],
+        "is_oscillatory" => [true, false, true],
+        "frequency_1" => [1, 0.0, 1],
+        "frequency_2" => [2, 0.0, 3],
+        "frequency_3" => [4, 0.0, 5],
+        "amplitude_1" => [0.1, 0.0, 0.1],
+        "amplitude_2" => [0.2, 0.0, 0.3],
+        "amplitude_3" => [0.4, 0.0, 0.5],
+    ))
+)
+perturbation_result = Dict(
+    "simulation_result" => DataFrame(Dict(
+        "parameter_index" => [1, 2],
+        "is_oscillatory" => [true, false],
+        "frequency_1" => [2, NaN],
+        "frequency_2" => [3, 3],
+        "frequency_3" => [5, NaN],
+        "amplitude_1" => [0.2, 0.1],
+        "amplitude_2" => [0.3, NaN],
+        "amplitude_3" => [0.5, 0.5],
+    ))
+)
+feature_change = feature_change_from_perturbation(find_oscillations_result, perturbation_result)
+@test feature_change[!, "parameter_index"] ≈ [7, 9]
+@test feature_change[1, "frequency_change"] ≈ 3/7
+@test feature_change[1, "amplitude_change"] ≈ 3/7
+@test isnan(feature_change[2, "frequency_change"])
+@test isnan(feature_change[2, "amplitude_change"])
