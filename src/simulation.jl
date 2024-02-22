@@ -454,16 +454,27 @@ Creates a perturbed parameter by randomly choosing a single parameter from each 
 - `perturbation_percentage::Real`: Percentage by which the parameter is perturbed
 - `random_seed::Int`: Seed for the random number generator
 
+# Arguments (Optional)
+- `keep_constant::AbstractArray{Int}`: Array of indices of parameters that should not be perturbed
+
 # Returns
 - `perturbed_parameter_sets::AbstractArray`: Array of perturbed parameter sets
 """
-function create_random_parameter_set_perturbation(parameter_sets::AbstractArray, perturbation_percentage::Real, random_seed::Int)
+function create_random_parameter_set_perturbation(parameter_sets::AbstractArray, perturbation_percentage::Real, random_seed::Int; keep_constant::AbstractArray{Int}=Int[])
     Random.seed!(random_seed)
     number_of_parameters = size(parameter_sets, 2)
     perturbed_parameter_sets = zeros(size(parameter_sets))
     for i in axes(parameter_sets, 1)
         perturbed_set = copy(parameter_sets[i, :])
         idx = rand(1:number_of_parameters)
+        trials = 0
+        while idx in keep_constant
+            if trials > 100
+                error("Could not find a parameter to perturb. Check the keep_constant array.")
+            end
+            idx = rand(1:number_of_parameters)
+            trials += 1
+        end
         perturbed_set[idx] = perturbed_set[idx] * (1 + perturbation_percentage)
         perturbed_parameter_sets[i, :] = perturbed_set
     end

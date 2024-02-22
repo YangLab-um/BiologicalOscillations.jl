@@ -29,3 +29,20 @@ equilibration_data = equilibrate_ODEs(model, parameter_sets, initial_conditions,
 @test abs(equilibration_data["final_state"][3][1] - 0.44) / 0.44 < 0.05
 @test abs(equilibration_data["final_state"][3][2] - 0.14) / 0.14 < 0.05
 @test abs(equilibration_data["final_state"][3][3] - 0.02) / 0.02 < 0.05
+
+# Test `create_random_parameter_set_perturbation`
+samples = 1000
+random_seed = 123
+parameter_set = pin_parameter_sets(model, samples, random_seed; dimensionless_time=dimensionless_time)
+
+perturbation_percentage = 0.01
+perturbed_parameter_set = create_random_parameter_set_perturbation(parameter_set, perturbation_percentage,
+                                                                   random_seed)     
+for i in 1:samples
+    # Only one parameter should be different and the difference should be the perturbation percentage
+    @test sum(perturbed_parameter_set[i, :] .!= parameter_set[i, :]) == 1
+    diff = abs(perturbed_parameter_set[i, :] - parameter_set[i, :])
+    @test diff / parameter_set[i, :] == perturbation_percentage
+end
+
+# TODO: check that keep_constant parameters are respected
