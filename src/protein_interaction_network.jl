@@ -352,11 +352,12 @@ Simulates protein interaction networks with single parameter perturbations. A si
 
 # Arguments (Optional)
 - `hyperparameters::Dict`: Dictionary of hyperparameters for the algorithm. Default values are defined in [`DEFAULT_PIN_HYPERPARAMETERS`](@ref).
+- `keep_constant::AbstractArray{Int}`: Array of indices of parameters to keep constant during the perturbation
 
 # Returns
 - `perturbation_result::Dict`: A dictionary containing the results of the parameter perturbation simulation.
 """
-function simulate_pin_parameter_perturbations(find_oscillation_result::Dict, perturbation_percentage::Real; hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
+function simulate_pin_parameter_perturbations(find_oscillation_result::Dict, perturbation_percentage::Real; hyperparameters=DEFAULT_PIN_HYPERPARAMETERS, keep_constant::AbstractArray{Int}=[])
     # Unpack hyperparameters
     abstol = hyperparameters["abstol"]
     reltol = hyperparameters["reltol"]
@@ -375,7 +376,7 @@ function simulate_pin_parameter_perturbations(find_oscillation_result::Dict, per
     # Unperturbed parameters. Convert them to the proper format
     parameter_sets = Matrix(find_oscillation_result["parameter_sets"]["oscillatory"][!, 2:end])
     # Perturb parameters
-    perturbed_parameter_sets = create_random_parameter_set_perturbation(parameter_sets, perturbation_percentage, random_seed)
+    perturbed_parameter_sets = create_random_parameter_set_perturbation(parameter_sets, perturbation_percentage, random_seed; keep_constant=keep_constant)
     # Initial conditions
     N, E = pin_nodes_edges(model)
     if isnan(initial_conditions)
