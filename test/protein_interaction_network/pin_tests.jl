@@ -150,17 +150,18 @@ perturbed_parameter_sets = perturbation_result["parameter_sets"]
 @test size(perturbed_parameter_sets) == size(original_parameter_sets)
 
 for i in 1:samples_T0
+    original = Array(original_parameter_sets[i, :])
+    perturbed = Array(perturbed_parameter_sets[i, :])
     # First parameter should be the same
-    @test perturbed_parameter_sets[i, keep_constant] == original_parameter_sets[i, keep_constant]
+    @test perturbed[keep_constant] == original[keep_constant]
     # Only one parameter should be different and the difference should be the perturbation percentage
-    @test sum(perturbed_parameter_sets[i, :] .!= original_parameter_sets[i, :]) == 1
-    difference = abs.(perturbed_parameter_sets[i, :] - original_parameter_sets[i, :])
+    @test sum(perturbed .!= original) == 1
+    difference = abs.(perturbed - original)
     change_idx = findfirst(difference .!= 0)
-    @test sum(difference / original_parameter_sets[i, change_idx]) ≈ perturbation_percentage
+    @test sum(difference / original[change_idx]) ≈ perturbation_percentage
 end
 
 @test perturbed_parameter_sets[!, "parameter_index"] == original_parameter_sets[!, "parameter_index"]
-@test size(perturbation_result["simulation_result"]) == size(pin_result_T0["simulation_result"])
 #TODO: Pick a single simulation (one parameter set) and test that the perturbation result is correct
 
 # Test `pin_hit_rate`

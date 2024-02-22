@@ -414,7 +414,7 @@ function simulate_pin_parameter_perturbations(find_oscillation_result::Dict, per
             "all" => true,
         )
     ))
-    perturbation_result = generate_find_oscillations_output(model, parameter_sets, equilibration_data, equilibration_times,
+    perturbation_result = generate_find_oscillations_output(model, perturbed_parameter_sets, equilibration_data, equilibration_times,
                                                             simulation_data, simulation_times, oscillatory_status, custom_output;
                                                             filter_results=false)
     # Calculate feature change
