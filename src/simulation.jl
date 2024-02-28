@@ -517,3 +517,25 @@ function feature_change_from_perturbation(find_oscillations_result::Dict, pertur
                                "amplitude_change" => amp_change)
     return feature_change
 end
+
+
+"""
+    calculate_perturbed_parameter_index(original_parameter_sets::AbstractArray, perturbed_parameter_sets::AbstractArray)
+
+Calculates the perturbed parameter index for all parameter sets
+
+# Arguments (Required)
+- `original_parameter_set::AbstractArray`: Array of original parameter sets
+- `perturbed_parameter_set::AbstractArray`: Array of perturbed parameter sets
+"""
+function calculate_perturbed_parameter_index(original_parameter_set::AbstractArray, perturbed_parameter_set::AbstractArray)
+    perturbed_parameter_index = []
+    for i in axes(original_parameter_set, 1)
+        original_set = original_parameter_set[i, :]
+        perturbed_set = perturbed_parameter_set[i, :]
+        diff = abs.(original_set .- perturbed_set)
+        idx = findfirst(diff .!= 0)
+        push!(perturbed_parameter_index, idx)
+    end
+    return perturbed_parameter_index
+end

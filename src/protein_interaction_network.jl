@@ -424,5 +424,8 @@ function simulate_pin_parameter_perturbations(find_oscillation_result::Dict, per
     original_parameter_index = find_oscillation_result["parameter_sets"]["oscillatory"][!, "parameter_index"]
     perturbation_result["simulation_result"][!, "parameter_index"] = original_parameter_index
     perturbation_result["parameter_sets"][!, "parameter_index"] = original_parameter_index
+    # Calculate which parameter was perturbed for each parameter set
+    perturbed_parameter_index = calculate_perturbed_parameter_index(parameter_sets, perturbed_parameter_sets)
+    perturbation_result["simulation_result"][!, "perturbed_parameter_index"] = perturbed_parameter_index
     return perturbation_result
 end

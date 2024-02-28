@@ -89,3 +89,21 @@ feature_change = feature_change_from_perturbation(find_oscillations_result, pert
 @test feature_change[1, "amplitude_change"] ≈ 3/7
 @test isnan(feature_change[2, "frequency_change"])
 @test isnan(feature_change[2, "amplitude_change"])
+
+# Test `calculate_perturbed_parameter_index`
+
+samples = 1000
+random_seed = 123
+parameter_set = pin_parameter_sets(model, samples, random_seed)
+
+perturbation_percentage = 0.01
+perturbed_parameter_set = create_random_parameter_set_perturbation(parameter_set, perturbation_percentage,
+                                                                   random_seed)
+perturbed_parameter_index = calculate_perturbed_parameter_index(parameter_set, perturbed_parameter_set)
+for i in 1:samples
+    # Only one parameter should be different and the difference should be the perturbation percentage
+    @test sum(perturbed_parameter_set[i, :] .!= parameter_set[i, :]) == 1
+    difference = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
+    change_idx = findfirst(difference .!= 0)
+    @test perturbed_parameter_index[i] == change_idx
+end
