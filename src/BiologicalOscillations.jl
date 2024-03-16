@@ -2,7 +2,7 @@ module BiologicalOscillations
 
 using Catalyst, DifferentialEquations, ModelingToolkit, Latexify
 using Statistics, DSP, Peaks, LatinHypercubeSampling, DataFrames
-using Combinatorics, Luxor, Images, FileIO, Random
+using Combinatorics, FileIO, Random
 
 # Models
 export elowitz_2000, guan_2008
@@ -30,8 +30,6 @@ export is_valid_connectivity, connectivity_string_to_matrix
 export DEFAULT_PIN_HYPERPARAMETERS, DEFAULT_PIN_PARAMETER_LIMITS, DEFAULT_PIN_SAMPLING_SCALES
 export DEFAULT_GRN_HYPERPARAMETERS, DEFAULT_GRN_PARAMETER_LIMITS, DEFAULT_GRN_SAMPLING_SCALES
 export DEFAULT_SIMULATION_OUTPUT
-# Visualization utilities
-export draw_connectivity
 
 include("default_hyperparameters.jl")
 include("models.jl")
@@ -41,6 +39,5 @@ include("user_input_handling.jl")
 include("feature_calculation.jl")
 include("gene_regulatory_network.jl")
 include("protein_interaction_network.jl")
-include("draw_utilities.jl")
 
 end
