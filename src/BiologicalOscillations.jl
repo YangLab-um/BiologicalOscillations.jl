@@ -40,4 +40,9 @@ include("feature_calculation.jl")
 include("gene_regulatory_network.jl")
 include("protein_interaction_network.jl")
 
+# Visualization utilities
+using Luxor, Images
+export draw_connectivity
+include("draw_utilities.jl")
+
 end
