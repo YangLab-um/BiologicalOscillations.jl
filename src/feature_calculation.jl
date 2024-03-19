@@ -136,3 +136,74 @@ function is_ODE_oscillatory(frequency_data::Dict, amplitude_data::Dict; freq_var
         return false
     end
 end
+
+
+"""
+    calculate_sojourn_time_fractions_in_nullclines(ode_solution::ODESolution)
+
+Calculate the time fractions that the dynamics stays near nullclines. These numbers can be use as a metric to quantify the time scale separation of oscillations.
+
+# Arguments (Required)
+- `ode_solution::ODESolution`: The full output of the `solve()` function from `DifferentialEquations.jl`. The solution should be oscillatory and equilibrated at least for the last cycle. The solution should also be long enough for accurate determination of periods.
+
+# Arguments (Optional)
+- `eps::Float64`: Threshold to determine if trajectories are close enough to nullclines.
+
+# Returns
+- `tss::Vector{Float64}`: Each element is the sojourn time fraction (sojourn time per period / period) computed for the respective nullcline. The length of the output vector equals the ODE dimension.
+"""
+function calculate_sojourn_time_fractions_in_nullclines(ode_solution::ODESolution; eps::Float64=1e-2)
+    period = 1 / mean(calculate_main_frequency(ode_solution, length(ode_solution.t), length(ode_solution.t))["frequency"])
+
+    idx_last_cycle = ode_solution.t .> ode_solution.t[end] - period
+    idx_last_cycle[findfirst(diff(idx_last_cycle) .== 1)] = 1
+    # add one more data point to fully complete a cycle
+
+    function gradient(v, grid)
+        # 1D equivalent of numpy.gradient with default inputs
+        # (second order accurate finite difference for interior and first order for edges)
+        grad = zeros(length(v))
+
+        d = diff(grid)
+
+        h_s = d[1:end - 1]
+        h_d = d[2:end]
+
+        f_plus = v[3:end]
+        f_0 = v[2:end - 1]
+        f_minus = v[1:end - 2]
+
+        # second order central difference for interior points
+        grad[2:end - 1] = @. (h_s ^ 2 * f_plus + (h_d ^ 2 - h_s ^ 2) * f_0 - h_d ^ 2 * f_minus) / (h_s * h_d * (h_d + h_s))
+
+        # first order forward/backward differences for boundary points
+        grad[1] = (v[2] - v[1]) / d[1]
+        grad[end] = (v[end] - v[end - 1]) / d[end]
+
+        return grad
+    end
+
+    N = length(ode_solution.u[1])
+    tss = []
+
+    for i = 1:N
+        t = ode_solution.t[idx_last_cycle]
+        sol = [v[i] for v in ode_solution.u[idx_last_cycle]]
+
+        sol = (sol .- minimum(sol)) / (maximum(sol) - minimum(sol))
+
+        grad = gradient(sol, t)
+
+        # thresholding to determine how close trajectories are to slow manifolds
+        nc = abs.(grad) .< maximum(abs.(grad)) * eps
+
+        nc = (nc[1:end - 1] + nc[2:end]) / 2
+
+        tss_ = sum(nc .* diff(t)) / (maximum(t) - minimum(t))
+        # total time that the trajectory stays near i-th variable nullcline
+
+        push!(tss, tss_)
+    end
+
+    return tss
+end
