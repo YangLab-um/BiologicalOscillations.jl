@@ -115,29 +115,54 @@ equilibration_times = pin_equilibration_times(repressilator, parameter_array)
 #TODO: Create a known solution and test that the equilibration times are correct
 
 # Test `find_pin_oscillations`
-samples = 5000
+samples_T0 = 5000
 connectivity_T0 = [0 0 -1;-1 0 0;0 -1 0]
 T0_hit_rate = 0.0154
-pin_result_T0 = find_pin_oscillations(connectivity_T0, samples)
+pin_result_T0 = find_pin_oscillations(connectivity_T0, samples_T0)
 oscillatory_df = filter(row -> row["is_oscillatory"] == true, pin_result_T0["simulation_result"])
 oscillatory_solutions = size(oscillatory_df, 1)
-@test oscillatory_solutions > samples*T0_hit_rate*0.8
+@test oscillatory_solutions > samples_T0 * T0_hit_rate * 0.8
 
-samples = 1000
+samples_T0_3 = 1000
 connectivity_T0_3 = [1 0 -1; -1 0 0; 0 -1 0]
 T0_3_hit_rate = 0.075
-pin_result_T0_3 = find_pin_oscillations(connectivity_T0_3, samples)
+pin_result_T0_3 = find_pin_oscillations(connectivity_T0_3, samples_T0_3)
 oscillatory_df = filter(row -> row["is_oscillatory"] == true, pin_result_T0_3["simulation_result"])
 oscillatory_solutions = size(oscillatory_df, 1)
-@test oscillatory_solutions > samples*T0_3_hit_rate*0.8
+@test oscillatory_solutions > samples_T0_3 * T0_3_hit_rate * 0.8
 
-samples = 1000
+samples_P0_6 = 1000
 connectivity_P0_6 = [0 0 0 0 -1; -1 0 0 0 0; 1 -1 0 0 0; 0 0 -1 0 0; 0 0 0 -1 0]
 P0_6_hit_rate = 0.059
-pin_result_P0_6 = find_pin_oscillations(connectivity_P0_6, samples)
+pin_result_P0_6 = find_pin_oscillations(connectivity_P0_6, samples_P0_6)
 oscillatory_df = filter(row -> row["is_oscillatory"] == true, pin_result_P0_6["simulation_result"])
 oscillatory_solutions = size(oscillatory_df, 1)
-@test oscillatory_solutions > samples*P0_6_hit_rate*0.8
+@test oscillatory_solutions > samples_P0_6 * P0_6_hit_rate * 0.8
+
+# Test `simulate_pin_parameter_perturbations`
+perturbation_percentage = 0.01
+keep_constant = [1]
+perturbation_result = simulate_pin_parameter_perturbations(pin_result_T0, perturbation_percentage; 
+                                                           keep_constant=keep_constant)
+original_parameter_sets = pin_result_T0["parameter_sets"]["oscillatory"]
+perturbed_parameter_sets = perturbation_result["parameter_sets"]
+
+@test size(perturbed_parameter_sets) == size(original_parameter_sets)
+
+for i in axes(original_parameter_sets, 1)
+    original = Array(original_parameter_sets[i, :])
+    perturbed = Array(perturbed_parameter_sets[i, :])
+    # First parameter should be the same
+    @test perturbed[keep_constant] == original[keep_constant]
+    # Only one parameter should be different and the difference should be the perturbation percentage
+    @test sum(perturbed .!= original) == 1
+    difference = abs.(perturbed - original)
+    change_idx = findfirst(difference .!= 0)
+    @test sum(difference / original[change_idx]) ≈ perturbation_percentage
+end
+
+@test perturbed_parameter_sets[!, "parameter_index"] == original_parameter_sets[!, "parameter_index"]
+#TODO: Pick a single simulation (one parameter set) and test that the perturbation result is correct
 
 # Test `pin_hit_rate`
 samples = 5000
