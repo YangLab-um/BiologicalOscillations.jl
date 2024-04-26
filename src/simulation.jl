@@ -247,6 +247,10 @@ function generate_find_oscillations_output(model::ReactionSystem, parameter_sets
     velocity = equilibration_data["final_velocity"]
     cutoff = 10 ^ mean(log10.(velocity))
     filter = velocity .> cutoff
+    # Samples
+    result["samples"] = samples
+    # Nodes
+    result["nodes"] = N
     # Model
     if haskey(hyperparameters["simulation_output"], "model")
         if hyperparameters["simulation_output"]["model"] == true
