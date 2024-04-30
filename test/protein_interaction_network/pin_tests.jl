@@ -324,3 +324,12 @@ result = find_pin_oscillations(connectivity_T0, samples;
                                hyperparameters=hyperparameters)
 @test result["simulation_result"] isa DataFrame
 @test size(result["simulation_result"], 2) == 21
+
+# Test correct number of samples and nodes on simulation_result
+samples = 10
+connectivity_T0 = [0 0 -1;-1 0 0;0 -1 0]
+result = find_pin_oscillations(connectivity_T0, samples)
+simulated_samples = result["samples"]
+simulated_nodes = result["nodes"]
+@test simulated_samples == samples
+@test simulated_nodes == 3
