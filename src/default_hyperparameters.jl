@@ -209,3 +209,58 @@ DEFAULT_GRN_HYPERPARAMETERS = Dict(
     "amp_variation_threshold" => 0.05,
     "simulation_output" => DEFAULT_SIMULATION_OUTPUT,
 )
+
+
+"""
+    DEFAULT_SEN_PARAMETER_LIMITS::Dict{String, Tuple{Float64, Float64}}
+
+Default parameter limits for the generation of sen parameter sets. Keys are the names of the parameters, values are tuples of the form (lower_limit, upper_limit).
+"""
+DEFAULT_SEN_PARAMETER_LIMITS = Dict(
+    "k_b" => (1e-2, 1e0), 
+    "k_u" => (1e-3, 1e3), 
+    "n" => (2.0, 4.0), 
+    "κ_tot" => (1e-3, 1e2), 
+    "η" => (1e-1, 1e1), 
+    "P̃" => (1e-3, 1e2)
+)
+
+
+"""
+    DEFAULT_SEN_SAMPLING_SCALES::Dict{String, String}
+
+Default sampling scales for the generation of sen parameter sets. Keys are the names of the parameters, values are strings indicating the sampling scale (log or linear).
+"""
+DEFAULT_SEN_SAMPLING_SCALES = Dict(
+    "k_b" => "log", 
+    "k_u" => "log", 
+    "n" => "linear", 
+    "κ_tot" => "log", 
+    "η" => "log", 
+    "P̃" => "log"
+)
+
+
+"""
+    DEFAULT_SEN_HYPERPARAMETERS
+
+Default hyperparameters for the various algorithms involved in the find_sen_oscillations pipeline.
+"""
+DEFAULT_SEN_HYPERPARAMETERS = Dict(
+    "random_seed" => 1234, # Random seed used to generate parameter sets.
+    "initial_conditions" => NaN, # Set of initial conditions for `find_sen_oscillations`. Size should be equal to the number of samples indicated. If NaN, all species are initialized at 0.5.
+    "parameter_limits" => DEFAULT_SEN_PARAMETER_LIMITS, # Dictionary of parameter limits (lower and upper bound) for each type of parameter in the model.
+    "sampling_scales" => DEFAULT_SEN_SAMPLING_SCALES, # Dictionary of sampling scales for each parameter in the model. Options are "log" or "linear".
+    "sampling_style" => "lhc", # Sampling style. Options are "lhc" (Latin hypercube) or "random".
+    "equilibration_time_multiplier" => 10, # Factor by which to multiply the slowest timescale to get the equilibration time
+    "solver" => RadauIIA5(), # Differential equation solver
+    "abstol" => 1e-7, # Absolute tolerance for the differential equation solver
+    "reltol" => 1e-4, # Relative tolerance for the differential equation solver
+    "maxiters" => 1e7, # Maximum number of iterations for the differential equation solver
+    "simulation_time_multiplier" => 10, # Number of periods to simulate. Used in `calculate_simulation_times`
+    "fft_multiplier" => 100, # Multiplier applied to the number of timepoints in an ODE solution to determine the main frequency. Used in `simulate_ODEs` when calling `calculate_main_frequency`.
+    "freq_variation_threshold" => 0.05, # Maximum tolerated variation in frequency between species in the solution to be declared oscillatory.
+    "power_threshold" => 1e-7, # Minimum spectral power that the main peak has to have to be declared oscillatory.
+    "amp_variation_threshold" => 0.05, # Maximum tolerated value for peak/trough variation to be declared oscillatory.
+    "simulation_output" => DEFAULT_SIMULATION_OUTPUT,
+)
