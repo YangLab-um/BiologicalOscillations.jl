@@ -2,7 +2,7 @@ module BiologicalOscillations
 
 using Catalyst, DifferentialEquations, ModelingToolkit, Latexify
 using Statistics, DSP, Peaks, LatinHypercubeSampling, DataFrames
-using Combinatorics, Luxor, Images, FileIO, Random
+using Combinatorics, FileIO, Random
 
 # Models
 export elowitz_2000, guan_2008
