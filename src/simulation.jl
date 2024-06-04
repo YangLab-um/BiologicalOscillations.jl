@@ -449,22 +449,23 @@ end
 
 
 """
-    create_random_parameter_set_perturbation(parameter_sets::AbstractArray, perturbation_percentage::Real, random_seed::Int)
+    create_random_parameter_set_perturbation(parameter_sets::AbstractArray, perturbation::Real, random_seed::Int, keep_constant::AbstractArray{Int}=Int[], mode::String="multiplicative")
 
 Creates a perturbed parameter by randomly choosing a single parameter from each parameter set and increasing it by a percentage of its value.
 
 # Arguments (Required)
 - `parameter_sets::AbstractArray`: Array where each row defines the parameter set for each simulation
-- `perturbation_percentage::Real`: Percentage by which the parameter is perturbed
+- `perturbation::Real`: Amount of perturbation to be applied to the parameter set. If `mode` is "multiplicative", this value is a percentage. If `mode` is "additive", this value is an absolute value.
 - `random_seed::Int`: Seed for the random number generator
 
 # Arguments (Optional)
 - `keep_constant::AbstractArray{Int}`: Array of indices of parameters that should not be perturbed
+- `mode::String`: Mode of perturbation. Accepted values are "multiplicative" and "additive"
 
 # Returns
 - `perturbed_parameter_sets::AbstractArray`: Array of perturbed parameter sets
 """
-function create_random_parameter_set_perturbation(parameter_sets::AbstractArray, perturbation_percentage::Real, random_seed::Int; keep_constant::AbstractArray{Int}=Int[])
+function create_random_parameter_set_perturbation(parameter_sets::AbstractArray, perturbation::Real, random_seed::Int; keep_constant::AbstractArray{Int}=Int[], mode::String="multiplicative")
     Random.seed!(random_seed)
     number_of_parameters = size(parameter_sets, 2)
     perturbed_parameter_sets = zeros(size(parameter_sets))
@@ -479,7 +480,11 @@ function create_random_parameter_set_perturbation(parameter_sets::AbstractArray,
             idx = rand(1:number_of_parameters)
             trials += 1
         end
-        perturbed_set[idx] = perturbed_set[idx] * (1 + perturbation_percentage)
+        if mode == "multiplicative"
+            perturbed_set[idx] = perturbed_set[idx] * (1 + perturbation)
+        elseif mode == "additive"
+            perturbed_set[idx] = perturbed_set[idx] + perturbation
+        end
         perturbed_parameter_sets[i, :] = perturbed_set
     end
     return perturbed_parameter_sets

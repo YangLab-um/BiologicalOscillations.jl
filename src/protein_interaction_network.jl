@@ -348,7 +348,7 @@ Simulates protein interaction networks with single parameter perturbations. A si
 # Arguments (Required)
 - `model::ReactionSystem`: Model generated with [`protein_interaction_network`](@ref)
 - `find_oscillation_result::Dict`: Result of the oscillatory parameter set search generated with [`find_pin_oscillations`](@ref)
-- `perturbation_percentage::Real`: Percentage of the parameter to perturb
+- `perturbed_parameter_sets`: Array of parameters to be simulated and compared to the original parameter sets
 
 # Arguments (Optional)
 - `hyperparameters::Dict`: Dictionary of hyperparameters for the algorithm. Default values are defined in [`DEFAULT_PIN_HYPERPARAMETERS`](@ref).
@@ -357,7 +357,7 @@ Simulates protein interaction networks with single parameter perturbations. A si
 # Returns
 - `perturbation_result::Dict`: A dictionary containing the results of the parameter perturbation simulation.
 """
-function simulate_pin_parameter_perturbations(find_oscillation_result::Dict, perturbation_percentage::Real; hyperparameters=DEFAULT_PIN_HYPERPARAMETERS, keep_constant::AbstractArray{Int}=[])
+function simulate_pin_parameter_perturbations(find_oscillation_result::Dict, perturbed_parameter_sets::AbstractArray; hyperparameters=DEFAULT_PIN_HYPERPARAMETERS, keep_constant::AbstractArray{Int}=[])
     # Unpack hyperparameters
     abstol = hyperparameters["abstol"]
     reltol = hyperparameters["reltol"]
@@ -375,8 +375,6 @@ function simulate_pin_parameter_perturbations(find_oscillation_result::Dict, per
     model = find_oscillation_result["model"]
     # Unperturbed parameters. Convert them to the proper format
     parameter_sets = Matrix(find_oscillation_result["parameter_sets"]["oscillatory"][!, 2:end])
-    # Perturb parameters
-    perturbed_parameter_sets = create_random_parameter_set_perturbation(parameter_sets, perturbation_percentage, random_seed; keep_constant=keep_constant)
     # Initial conditions
     N, E = pin_nodes_edges(model)
     if isnan(initial_conditions)
@@ -417,9 +415,6 @@ function simulate_pin_parameter_perturbations(find_oscillation_result::Dict, per
     perturbation_result = generate_find_oscillations_output(model, perturbed_parameter_sets, equilibration_data, equilibration_times,
                                                             simulation_data, simulation_times, oscillatory_status, custom_output;
                                                             filter_results=false)
-    # Calculate feature change
-    feature_change = feature_change_from_perturbation(find_oscillation_result, perturbation_result)
-    perturbation_result["feature_change"] = feature_change
     # Link original and perturbation sets via parameter index
     original_parameter_index = find_oscillation_result["parameter_sets"]["oscillatory"][!, "parameter_index"]
     perturbation_result["simulation_result"][!, "parameter_index"] = original_parameter_index
