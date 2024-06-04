@@ -187,7 +187,7 @@ calculated_hit_rate = pin_hit_rate(connectivity_P0_6, samples; verbose=false)
 samples = 200
 random_seed = 4567
 connectivity_T0 = [0 0 -1;-1 0 0;0 -1 0]
-hyperparameters = DEFAULT_PIN_HYPERPARAMETERS
+hyperparameters = deepcopy(DEFAULT_PIN_HYPERPARAMETERS)
 hyperparameters["random_seed"] = random_seed
 result = find_pin_oscillations(connectivity_T0, samples; 
                                hyperparameters=hyperparameters)
@@ -225,7 +225,7 @@ end
 samples = 200
 random_seed = 4567
 connectivity_T0 = [0 0 -1;-1 0 0;0 -1 0]
-hyperparameters = DEFAULT_PIN_HYPERPARAMETERS
+hyperparameters = deepcopy(DEFAULT_PIN_HYPERPARAMETERS)
 hyperparameters["random_seed"] = random_seed
 solver = hyperparameters["solver"]
 result = find_pin_oscillations(connectivity_T0, samples; 
@@ -275,7 +275,7 @@ end
 # Test that output can be customized
 samples = 200
 connectivity_T0 = [0 0 -1;-1 0 0;0 -1 0]
-hyperparameters = DEFAULT_PIN_HYPERPARAMETERS
+hyperparameters = deepcopy(DEFAULT_PIN_HYPERPARAMETERS)
 
 sim_output_config = Dict(
     "model" => true,
@@ -349,3 +349,12 @@ result = find_pin_oscillations(connectivity_T0, samples;
                                hyperparameters=hyperparameters)
 @test result["simulation_result"] isa DataFrame
 @test size(result["simulation_result"], 2) == 21
+
+# Test correct number of samples and nodes on simulation_result
+samples = 10
+connectivity_T0 = [0 0 -1;-1 0 0;0 -1 0]
+result = find_pin_oscillations(connectivity_T0, samples)
+simulated_samples = result["samples"]
+simulated_nodes = result["nodes"]
+@test simulated_samples == samples
+@test simulated_nodes == 3
