@@ -352,12 +352,11 @@ Simulates protein interaction networks with single parameter perturbations. A si
 
 # Arguments (Optional)
 - `hyperparameters::Dict`: Dictionary of hyperparameters for the algorithm. Default values are defined in [`DEFAULT_PIN_HYPERPARAMETERS`](@ref).
-- `keep_constant::AbstractArray{Int}`: Array of indices of parameters to keep constant during the perturbation
 
 # Returns
 - `perturbation_result::Dict`: A dictionary containing the results of the parameter perturbation simulation.
 """
-function simulate_pin_parameter_perturbations(find_oscillation_result::Dict, perturbed_parameter_sets::AbstractArray; hyperparameters=DEFAULT_PIN_HYPERPARAMETERS, keep_constant::AbstractArray{Int}=[])
+function simulate_pin_parameter_perturbations(find_oscillation_result::Dict, perturbed_parameter_sets::AbstractArray; hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
     # Unpack hyperparameters
     abstol = hyperparameters["abstol"]
     reltol = hyperparameters["reltol"]

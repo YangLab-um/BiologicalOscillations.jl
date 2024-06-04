@@ -140,10 +140,16 @@ oscillatory_solutions = size(oscillatory_df, 1)
 @test oscillatory_solutions > samples_P0_6 * P0_6_hit_rate * 0.8
 
 # Test `simulate_pin_parameter_perturbations`
+samples = 1000
+random_seed = 123
+parameter_set = pin_parameter_sets(model, samples, random_seed)
 perturbation_percentage = 0.01
 keep_constant = [1]
-perturbation_result = simulate_pin_parameter_perturbations(pin_result_T0, perturbation_percentage; 
-                                                           keep_constant=keep_constant)
+
+perturbed_parameter_set = create_random_parameter_set_perturbation(parameter_set, perturbation_percentage,
+                                                                   random_seed, keep_constant=keep_constant)     
+
+perturbation_result = simulate_pin_parameter_perturbations(pin_result_T0, perturbed_parameter_set)
 original_parameter_sets = pin_result_T0["parameter_sets"]["oscillatory"]
 perturbed_parameter_sets = perturbation_result["parameter_sets"]
 
