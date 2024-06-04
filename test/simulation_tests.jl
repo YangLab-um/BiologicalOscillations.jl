@@ -58,6 +58,23 @@ for i in 1:samples
     @test sum(difference / parameter_set[i, change_idx]) ≈ perturbation_percentage
 end
 
+# Test that we can create additive perturbations
+samples = 1000
+random_seed = 123
+parameter_set = pin_parameter_sets(model, samples, random_seed)
+
+perturbation_amount = 0.01
+perturbed_parameter_set = create_random_parameter_set_perturbation(parameter_set, perturbation_amount,
+                                                                   random_seed, mode="additive")     
+for i in 1:samples
+    # Only one parameter should be different and the difference should be the perturbation value
+    @test sum(perturbed_parameter_set[i, :] .!= parameter_set[i, :]) == 1
+    difference = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
+    change_idx = findfirst(difference .!= 0)
+    @test sum(difference) ≈ perturbation_amount
+end
+
+
 # Test `feature_change_from_perturbation`
 find_oscillations_result = Dict(
     "simulation_result" => DataFrame(Dict(
@@ -106,4 +123,36 @@ for i in 1:samples
     difference = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
     change_idx = findfirst(difference .!= 0)
     @test perturbed_parameter_index[i] == change_idx
+end
+
+
+# Test `create_single_parameter_perturbation`
+samples = 1000
+random_seed = 123
+parameter_set = pin_parameter_sets(model, samples, random_seed)
+
+perturbation_percentage = 0.01
+parameter_index = 3
+perturbed_parameter_set = create_single_parameter_perturbation(parameter_set, perturbation_percentage, parameter_index)     
+for i in 1:samples
+    # Only one parameter should be different and the difference should be the perturbation value at the parameter index
+    @test sum(perturbed_parameter_set[i, :] .!= parameter_set[i, :]) == 1
+    difference = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
+    change_idx = findfirst(difference .!= 0)
+    @test change_idx == parameter_index
+    @test sum(difference / parameter_set[i, change_idx]) ≈ perturbation_percentage
+end
+
+# Test `create_single_parameter_perturbation` with additive perturbation
+
+perturbation_amount = 0.01
+perturbed_parameter_set = create_single_parameter_perturbation(parameter_set, perturbation_percentage, parameter_index,
+                                                               mode="additive")     
+for i in 1:samples
+    # Only one parameter should be different and the difference should be the perturbation value at the parameter index
+    @test sum(perturbed_parameter_set[i, :] .!= parameter_set[i, :]) == 1
+    difference = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
+    change_idx = findfirst(difference .!= 0)
+    @test change_idx == parameter_index
+    @test sum(difference) ≈ perturbation_amount
 end

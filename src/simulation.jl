@@ -492,6 +492,35 @@ end
 
 
 """
+    create_single_parameter_perturbation(parameter_sets::AbstractArray, perturbation::Real, parameter_index::Int, mode::String="multiplicative")
+
+Creates a perturbed parameter by modifying a single parameter from each parameter set
+
+# Arguments (Required)
+- `parameter_sets::AbstractArray`: Array where each row defines the parameter set for each simulation
+- `perturbation::Real`: Amount of perturbation to be applied to the parameter set. If `mode` is "multiplicative", this value is a percentage. If `mode` is "additive", this value is an absolute value.
+- `parameter_index::Int`: Index of the parameter to be perturbed
+
+# Arguments (Optional)
+- `mode::String`: Mode of perturbation. Accepted values are "multiplicative" and "additive"
+
+# Returns
+- `perturbed_parameter_sets::AbstractArray`: Array of perturbed parameter sets
+"""
+function create_single_parameter_perturbation(parameter_sets::AbstractArray, perturbation::Real, parameter_index::Int, mode::String="multiplicative")
+    perturbed_parameter_sets = copy(parameter_sets)
+    for i in axes(parameter_sets, 1)
+        if mode == "multiplicative"
+            perturbed_parameter_sets[i, parameter_index] = perturbed_parameter_sets[i, parameter_index] * (1 + perturbation)
+        elseif mode == "additive"
+            perturbed_parameter_sets[i, parameter_index] = perturbed_parameter_sets[i, parameter_index] + perturbation
+        end
+    end
+    return perturbed_parameter_sets
+end
+
+
+"""
     feature_change_from_perturbation(find_oscillations_result::Dict, perturbation_result::Dict)
 
 Calculate frequency and amplitude changes between the original and perturbed parameter sets
