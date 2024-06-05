@@ -338,3 +338,88 @@ function pin_hit_rate(connectivity::AbstractMatrix, initial_samples::Int; target
         return hit_rate
     end
 end
+
+
+"""
+    simulate_pin_parameter_perturbations(model::ReactionSystem, find_oscillation_result::Dict, perturbation_percentage::Real; hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
+
+Simulates protein interaction networks with single parameter perturbations. A single parameter perturbation is randomly applied to each parameter set.
+
+# Arguments (Required)
+- `model::ReactionSystem`: Model generated with [`protein_interaction_network`](@ref)
+- `find_oscillation_result::Dict`: Result of the oscillatory parameter set search generated with [`find_pin_oscillations`](@ref)
+- `perturbed_parameter_sets`: Array of parameters to be simulated and compared to the original parameter sets
+
+# Arguments (Optional)
+- `hyperparameters::Dict`: Dictionary of hyperparameters for the algorithm. Default values are defined in [`DEFAULT_PIN_HYPERPARAMETERS`](@ref).
+
+# Returns
+- `perturbation_result::Dict`: A dictionary containing the results of the parameter perturbation simulation.
+"""
+function simulate_pin_parameter_perturbations(find_oscillation_result::Dict, perturbed_parameter_sets::AbstractArray; hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
+    # Unpack hyperparameters
+    abstol = hyperparameters["abstol"]
+    reltol = hyperparameters["reltol"]
+    solver = hyperparameters["solver"]
+    maxiters = hyperparameters["maxiters"]
+    random_seed = hyperparameters["random_seed"]
+    fft_multiplier = hyperparameters["fft_multiplier"]
+    power_threshold = hyperparameters["power_threshold"]
+    initial_conditions = hyperparameters["initial_conditions"]
+    amp_variation_threshold = hyperparameters["amp_variation_threshold"]
+    freq_variation_threshold = hyperparameters["freq_variation_threshold"]
+    simulation_time_multiplier = hyperparameters["simulation_time_multiplier"]
+    equilibration_time_multiplier = hyperparameters["equilibration_time_multiplier"]
+    # Model
+    model = find_oscillation_result["model"]
+    # Unperturbed parameters. Convert them to the proper format
+    parameter_sets = Matrix(find_oscillation_result["parameter_sets"]["oscillatory"][!, 2:end])
+    # Initial conditions
+    N, E = pin_nodes_edges(model)
+    if isnan(initial_conditions)
+        initial_conditions = [0.5*ones(N) for i=1:size(perturbed_parameter_sets, 1)]
+    end 
+    # Equilibrate
+    equilibration_times = pin_equilibration_times(model, perturbed_parameter_sets; 
+                                                  equilibration_time_multiplier=equilibration_time_multiplier)
+    equilibration_data = equilibrate_ODEs(model, perturbed_parameter_sets, initial_conditions, equilibration_times;
+                                          solver=solver, abstol=abstol, reltol=reltol, maxiters=maxiters)
+    # Simulate
+    simulation_times = calculate_simulation_times(equilibration_data, equilibration_times;
+                                                  simulation_time_multiplier=simulation_time_multiplier)
+    simulation_data = simulate_ODEs(model, perturbed_parameter_sets, equilibration_data["final_state"], simulation_times;
+                                    solver=solver, abstol=abstol, reltol=reltol, maxiters=maxiters, fft_multiplier=fft_multiplier) 
+    # Check for oscillations
+    oscillatory_status = calculate_oscillatory_status(simulation_data; 
+                                                      freq_variation_threshold=freq_variation_threshold, 
+                                                      power_threshold=power_threshold, 
+                                                      amp_variation_threshold=amp_variation_threshold)
+    # Custom output
+    custom_output = Dict("simulation_output" => Dict(
+        "simulation_result" => Dict(
+            "parameter_index" => true,
+            "simulation_time" => true,
+            "final_state" => true,
+            "frequency" => true,
+            "fft_power" => true,
+            "amplitude" => true,
+            "peak_variation" => true,
+            "trough_variation" => true,
+            "is_oscillatory" => true
+        ),
+        "parameter_sets" => Dict(
+            "all" => true,
+        )
+    ))
+    perturbation_result = generate_find_oscillations_output(model, perturbed_parameter_sets, equilibration_data, equilibration_times,
+                                                            simulation_data, simulation_times, oscillatory_status, custom_output;
+                                                            filter_results=false)
+    # Link original and perturbation sets via parameter index
+    original_parameter_index = find_oscillation_result["parameter_sets"]["oscillatory"][!, "parameter_index"]
+    perturbation_result["simulation_result"][!, "parameter_index"] = original_parameter_index
+    perturbation_result["parameter_sets"][!, "parameter_index"] = original_parameter_index
+    # Calculate which parameter was perturbed for each parameter set
+    perturbed_parameter_index = calculate_perturbed_parameter_index(parameter_sets, perturbed_parameter_sets)
+    perturbation_result["simulation_result"][!, "perturbed_parameter_index"] = perturbed_parameter_index
+    return perturbation_result
+end

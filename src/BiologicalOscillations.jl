@@ -8,13 +8,14 @@ using Combinatorics, FileIO, Random
 export elowitz_2000, guan_2008
 # Simulation
 export generate_parameter_sets, equilibrate_ODEs, simulate_ODEs, calculate_simulation_times
-export calculate_oscillatory_status, generate_find_oscillations_output
+export calculate_oscillatory_status, generate_find_oscillations_output, create_random_parameter_set_perturbation
+export feature_change_from_perturbation, calculate_perturbed_parameter_index, create_single_parameter_perturbation
 # Feature calculation
 export calculate_main_frequency, calculate_amplitude, is_ODE_oscillatory
 # Protein interaction network
 export protein_interaction_network, pin_parameters, pin_timescale, pin_parameter_sets
 export pin_equilibration_times, find_pin_oscillations, pin_nodes_edges
-export pin_hit_rate
+export pin_hit_rate, simulate_pin_parameter_perturbations
 # Gene regulatory network
 export gene_regulatory_network, grn_parameters, grn_timescale, grn_parameter_sets
 export grn_equilibration_times, find_grn_oscillations

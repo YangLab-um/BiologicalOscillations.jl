@@ -29,3 +29,130 @@ equilibration_data = equilibrate_ODEs(model, parameter_sets, initial_conditions,
 @test abs(equilibration_data["final_state"][3][1] - 0.44) / 0.44 < 0.05
 @test abs(equilibration_data["final_state"][3][2] - 0.14) / 0.14 < 0.05
 @test abs(equilibration_data["final_state"][3][3] - 0.02) / 0.02 < 0.05
+
+# Test `create_random_parameter_set_perturbation`
+samples = 1000
+random_seed = 123
+parameter_set = pin_parameter_sets(model, samples, random_seed)
+
+perturbation_percentage = 0.01
+perturbed_parameter_set = create_random_parameter_set_perturbation(parameter_set, perturbation_percentage,
+                                                                   random_seed)     
+for i in 1:samples
+    # Only one parameter should be different and the difference should be the perturbation percentage
+    @test sum(perturbed_parameter_set[i, :] .!= parameter_set[i, :]) == 1
+    difference = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
+    change_idx = findfirst(difference .!= 0)
+    @test sum(difference / parameter_set[i, change_idx]) ≈ perturbation_percentage
+end
+
+keep_constant = [1]
+perturbed_parameter_set = create_random_parameter_set_perturbation(parameter_set, perturbation_percentage,
+                                                                   random_seed; keep_constant=keep_constant)
+for i in 1:samples
+    # First parameter should be the same
+    @test perturbed_parameter_set[i, keep_constant] == parameter_set[i, keep_constant]
+    # Only one parameter should be different and the difference should be the perturbation percentage
+    difference = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
+    change_idx = findfirst(difference .!= 0)
+    @test sum(difference / parameter_set[i, change_idx]) ≈ perturbation_percentage
+end
+
+# Test that we can create additive perturbations
+samples = 1000
+random_seed = 123
+parameter_set = pin_parameter_sets(model, samples, random_seed)
+
+perturbation_amount = 0.01
+perturbed_parameter_set = create_random_parameter_set_perturbation(parameter_set, perturbation_amount,
+                                                                   random_seed; mode="additive")     
+for i in 1:samples
+    # Only one parameter should be different and the difference should be the perturbation value
+    @test sum(perturbed_parameter_set[i, :] .!= parameter_set[i, :]) == 1
+    difference = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
+    change_idx = findfirst(difference .!= 0)
+    @test sum(difference) ≈ perturbation_amount
+end
+
+
+# Test `feature_change_from_perturbation`
+find_oscillations_result = Dict(
+    "simulation_result" => DataFrame(Dict(
+        "parameter_index" => [7, 8, 9],
+        "is_oscillatory" => [true, false, true],
+        "frequency_1" => [1, 0.0, 1],
+        "frequency_2" => [2, 0.0, 3],
+        "frequency_3" => [4, 0.0, 5],
+        "amplitude_1" => [0.1, 0.0, 0.1],
+        "amplitude_2" => [0.2, 0.0, 0.3],
+        "amplitude_3" => [0.4, 0.0, 0.5],
+    ))
+)
+perturbation_result = Dict(
+    "simulation_result" => DataFrame(Dict(
+        "parameter_index" => [1, 2],
+        "is_oscillatory" => [true, false],
+        "frequency_1" => [2, NaN],
+        "frequency_2" => [3, 3],
+        "frequency_3" => [5, NaN],
+        "amplitude_1" => [0.2, 0.1],
+        "amplitude_2" => [0.3, NaN],
+        "amplitude_3" => [0.5, 0.5],
+    ))
+)
+feature_change = feature_change_from_perturbation(find_oscillations_result, perturbation_result)
+@test feature_change[!, "parameter_index"] ≈ [7, 9]
+@test feature_change[1, "frequency_change"] ≈ 3/7
+@test feature_change[1, "amplitude_change"] ≈ 3/7
+@test isnan(feature_change[2, "frequency_change"])
+@test isnan(feature_change[2, "amplitude_change"])
+
+# Test `calculate_perturbed_parameter_index`
+
+samples = 1000
+random_seed = 123
+parameter_set = pin_parameter_sets(model, samples, random_seed)
+
+perturbation_percentage = 0.01
+perturbed_parameter_set = create_random_parameter_set_perturbation(parameter_set, perturbation_percentage,
+                                                                   random_seed)
+perturbed_parameter_index = calculate_perturbed_parameter_index(parameter_set, perturbed_parameter_set)
+for i in 1:samples
+    # Only one parameter should be different and the difference should be the perturbation percentage
+    @test sum(perturbed_parameter_set[i, :] .!= parameter_set[i, :]) == 1
+    difference = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
+    change_idx = findfirst(difference .!= 0)
+    @test perturbed_parameter_index[i] == change_idx
+end
+
+
+# Test `create_single_parameter_perturbation`
+samples = 1000
+random_seed = 123
+parameter_set = pin_parameter_sets(model, samples, random_seed)
+
+perturbation_percentage = 0.01
+parameter_index = 3
+perturbed_parameter_set = create_single_parameter_perturbation(parameter_set, perturbation_percentage, parameter_index)     
+for i in 1:samples
+    # Only one parameter should be different and the difference should be the perturbation value at the parameter index
+    @test sum(perturbed_parameter_set[i, :] .!= parameter_set[i, :]) == 1
+    difference = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
+    change_idx = findfirst(difference .!= 0)
+    @test change_idx == parameter_index
+    @test sum(difference / parameter_set[i, change_idx]) ≈ perturbation_percentage
+end
+
+# Test `create_single_parameter_perturbation` with additive perturbation
+perturbation_amount = 0.01
+parameter_index = 5
+perturbed_parameter_set = create_single_parameter_perturbation(parameter_set, perturbation_percentage, parameter_index;
+                                                               mode="additive")     
+for i in 1:samples
+    # Only one parameter should be different and the difference should be the perturbation value at the parameter index
+    @test sum(perturbed_parameter_set[i, :] .!= parameter_set[i, :]) == 1
+    difference = abs.(perturbed_parameter_set[i, :] - parameter_set[i, :])
+    change_idx = findfirst(difference .!= 0)
+    @test change_idx == parameter_index
+    @test sum(difference) ≈ perturbation_amount
+end
