@@ -144,16 +144,17 @@ samples = 1000
 random_seed = 123
 connectivity_T0 = [0 0 -1;-1 0 0;0 -1 0]
 pin_result = find_pin_oscillations(connectivity_T0, samples)
-original_parameter_sets = Matrix(pin_result["parameter_sets"]["oscillatory"][!, 2:end])
+parameter_sets = Matrix(pin_result["parameter_sets"]["oscillatory"][!, 2:end])
 perturbation_percentage = 0.01
 keep_constant = [1]
 
-perturbed_parameter_set = create_random_parameter_set_perturbation(original_parameter_sets, 
+perturbed_parameter_set = create_random_parameter_set_perturbation(parameter_sets, 
                                                                    perturbation_percentage,
                                                                    random_seed, keep_constant=keep_constant)     
 
 perturbation_result = simulate_pin_parameter_perturbations(pin_result, perturbed_parameter_set)
-perturbed_parameter_sets = perturbation_result["parameter_sets"]
+original_parameter_sets = pin_result["parameter_sets"]["oscillatory"][!, 2:end]
+perturbed_parameter_sets = perturbation_result["parameter_sets"][!, 2:end]
 
 @test size(perturbed_parameter_sets) == size(original_parameter_sets)
 
@@ -169,7 +170,9 @@ for i in axes(original_parameter_sets, 1)
     @test sum(difference / original[change_idx]) ≈ perturbation_percentage
 end
 
-@test perturbed_parameter_sets[!, "parameter_index"] == original_parameter_sets[!, "parameter_index"]
+original_parameter_index = pin_result["parameter_sets"]["oscillatory"][!, "parameter_index"]
+perturbed_parameter_index = perturbation_result["parameter_sets"][!, "parameter_index"]
+@test  original_parameter_index == perturbed_parameter_index
 #TODO: Pick a single simulation (one parameter set) and test that the perturbation result is correct
 
 # Test `pin_hit_rate`
