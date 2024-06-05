@@ -143,6 +143,7 @@ oscillatory_solutions = size(oscillatory_df, 1)
 samples = 1000
 random_seed = 123
 model = protein_interaction_network([0 0 -1;-1 0 0;0 -1 0])
+pin_result = find_pin_oscillations(model, samples)
 parameter_set = pin_parameter_sets(model, samples, random_seed)
 perturbation_percentage = 0.01
 keep_constant = [1]
@@ -150,7 +151,7 @@ keep_constant = [1]
 perturbed_parameter_set = create_random_parameter_set_perturbation(parameter_set, perturbation_percentage,
                                                                    random_seed, keep_constant=keep_constant)     
 
-perturbation_result = simulate_pin_parameter_perturbations(pin_result_T0, perturbed_parameter_set)
+perturbation_result = simulate_pin_parameter_perturbations(pin_result, perturbed_parameter_set)
 original_parameter_sets = pin_result_T0["parameter_sets"]["oscillatory"]
 perturbed_parameter_sets = perturbation_result["parameter_sets"]
 
