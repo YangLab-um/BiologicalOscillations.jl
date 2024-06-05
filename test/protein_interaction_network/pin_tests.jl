@@ -144,16 +144,15 @@ samples = 1000
 random_seed = 123
 connectivity_T0 = [0 0 -1;-1 0 0;0 -1 0]
 pin_result = find_pin_oscillations(connectivity_T0, samples)
-model = protein_interaction_network(connectivity_T0)
-parameter_set = pin_parameter_sets(model, samples, random_seed)
+original_parameter_sets = Matrix(pin_result["parameter_sets"]["oscillatory"][!, 2:end])
 perturbation_percentage = 0.01
 keep_constant = [1]
 
-perturbed_parameter_set = create_random_parameter_set_perturbation(parameter_set, perturbation_percentage,
+perturbed_parameter_set = create_random_parameter_set_perturbation(original_parameter_sets, 
+                                                                   perturbation_percentage,
                                                                    random_seed, keep_constant=keep_constant)     
 
 perturbation_result = simulate_pin_parameter_perturbations(pin_result, perturbed_parameter_set)
-original_parameter_sets = pin_result_T0["parameter_sets"]["oscillatory"]
 perturbed_parameter_sets = perturbation_result["parameter_sets"]
 
 @test size(perturbed_parameter_sets) == size(original_parameter_sets)
