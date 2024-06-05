@@ -507,7 +507,7 @@ Creates a perturbed parameter by modifying a single parameter from each paramete
 # Returns
 - `perturbed_parameter_sets::AbstractArray`: Array of perturbed parameter sets
 """
-function create_single_parameter_perturbation(parameter_sets::AbstractArray, perturbation::Real, parameter_index::Int, mode::String="multiplicative")
+function create_single_parameter_perturbation(parameter_sets::AbstractArray, perturbation::Real, parameter_index::Int; mode::String="multiplicative")
     perturbed_parameter_sets = copy(parameter_sets)
     for i in axes(parameter_sets, 1)
         if mode == "multiplicative"

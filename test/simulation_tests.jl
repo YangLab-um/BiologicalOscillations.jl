@@ -65,7 +65,7 @@ parameter_set = pin_parameter_sets(model, samples, random_seed)
 
 perturbation_amount = 0.01
 perturbed_parameter_set = create_random_parameter_set_perturbation(parameter_set, perturbation_amount,
-                                                                   random_seed, mode="additive")     
+                                                                   random_seed; mode="additive")     
 for i in 1:samples
     # Only one parameter should be different and the difference should be the perturbation value
     @test sum(perturbed_parameter_set[i, :] .!= parameter_set[i, :]) == 1
@@ -144,9 +144,9 @@ for i in 1:samples
 end
 
 # Test `create_single_parameter_perturbation` with additive perturbation
-
 perturbation_amount = 0.01
-perturbed_parameter_set = create_single_parameter_perturbation(parameter_set, perturbation_percentage, parameter_index,
+parameter_index = 5
+perturbed_parameter_set = create_single_parameter_perturbation(parameter_set, perturbation_percentage, parameter_index;
                                                                mode="additive")     
 for i in 1:samples
     # Only one parameter should be different and the difference should be the perturbation value at the parameter index
