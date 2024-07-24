@@ -423,3 +423,49 @@ function simulate_pin_parameter_perturbations(find_oscillation_result::Dict, per
     perturbation_result["simulation_result"][!, "perturbed_parameter_index"] = perturbed_parameter_index
     return perturbation_result
 end
+
+
+"""
+    obtain_time_series(find_oscillation_result::Dict, total_periods::Int, total_timepoints::Int, hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
+
+Obtains time series data for the oscillatory parameter sets in `find_oscillation_result`.
+
+# Arguments (Required)
+- `find_oscillation_result::Dict`: Result of the oscillatory parameter set search generated with [`find_pin_oscillations`](@ref)
+- `total_periods::Int`: Total number of periods to simulate
+- `total_timepoints::Int`: Total number of timepoints in the output time series
+
+# Arguments (Optional)
+- `hyperparameters::Dict`: Dictionary of hyperparameters for the algorithm. Default values are defined in [`DEFAULT_PIN_HYPERPARAMETERS`](@ref).
+
+# Returns
+- `time_series::Dict`: A dictionary containing the time series data for the oscillatory parameter sets. Output is encoded as:
+```julia
+time_series = Dict("model" => "ReactionSystem of the protein interaction network",
+                   "parameter_sets" => "Dataframe of parameter sets",
+                   "time_series" => "Dataframe containing time series data for each parameter set")
+```
+"""
+function obtain_time_series_from_result(find_oscillation_result::Dict, total_periods::Int, total_timepoints::Int, hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
+    # Unpack hyperparameters
+    abstol = hyperparameters["abstol"]
+    reltol = hyperparameters["reltol"]
+    solver = hyperparameters["solver"]
+    maxiters = hyperparameters["maxiters"]
+    random_seed = hyperparameters["random_seed"]
+    # Model
+    model = find_oscillation_result["model"]
+    nodes = find_oscillation_result["nodes"]
+    # Parameters. Convert them to the proper format
+    parameter_sets = Matrix(find_oscillation_result["parameter_sets"]["oscillatory"][!, 2:end])
+    # Initial conditions
+    initial_conditions = extract_final_state_from_result(find_oscillation_result["simulation_result"], nodes)
+    # Simulation times
+    #TODO: Obtain simulation times
+
+    # Simulate
+
+    #TODO: Need to make time series data be an output of simulate_ODEs (or create a new function)
+    simulation_data = simulate_ODEs(model, perturbed_parameter_sets, equilibration_data["final_state"], simulation_times;
+                                    solver=solver, abstol=abstol, reltol=reltol, maxiters=maxiters, fft_multiplier=fft_multiplier) 
+end

@@ -577,3 +577,23 @@ function calculate_perturbed_parameter_index(original_parameter_set::AbstractArr
     end
     return perturbed_parameter_index
 end
+
+
+"""
+    extract_final_state_from_result(simulation_result::DataFrame, nodes::Int)
+
+Extracts the final state from a simulation result
+
+# Arguments (Required)
+- `simulation_result::DataFrame`: DataFrame containing the simulation results
+- `nodes::Int`: Number of nodes in the model
+
+# Returns
+- `final_state::AbstractArray`: Array of final states with size (samples, nodes)
+"""
+function extract_final_state_from_result(simulation_result::DataFrame, nodes::Int)
+    final_state = [simulation_result[!, "final_state_$i"] for i in 1:nodes]
+    final_state = permutedims(hcat(final_state...), (1, 2))
+    final_state = [vec(row) for row in eachrow(final_state)]
+    return final_state
+end
