@@ -208,6 +208,7 @@ function calculate_simulation_times_from_result(simulation_result::DataFrame, si
     single_frequencies = mean.(eachrow(original_frequency_df))
     simulation_times = simulation_time_multiplier ./ single_frequencies
     return simulation_times
+end
 
 
 """
