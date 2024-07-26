@@ -192,6 +192,25 @@ end
 
 
 """
+    calculate_simulation_times_from_simulation_result(simulation_result::DataFrame; simulation_time_multiplier=4)
+
+Calculates the simulation times for each parameter set in a model using the frequency data from the simulation result
+
+# Arguments (Required)
+- `simulation_result::DataFrame`: DataFrame containing the simulation results
+- `simulation_time_multiplier::Real`: Factor by which the period (given by the estimated frequency from the simulation) is multiplied by in order to calculate the final simulation time
+
+# Returns
+- `simulation_times::Array{Float64}`: Array of simulation times
+"""
+function calculate_simulation_times_from_result(simulation_result::DataFrame, simulation_time_multiplier::Real) 
+    frequency_df = select(simulation_result, r"frequency_*")
+    single_frequencies = mean.(eachrow(original_frequency_df))
+    simulation_times = simulation_time_multiplier ./ single_frequencies
+    return simulation_times
+
+
+"""
     calculate_oscillatory_status(simulation_data::Dict; freq_variation_threshold::Real=0.05, power_threshold::Real=1e-7, amp_variation_threshold::Real=0.05)
 
 Calculates the oscillatory status for each parameter set using the functionality of [`is_ODE_oscillatory`](@ref)

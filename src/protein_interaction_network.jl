@@ -452,19 +452,17 @@ function obtain_time_series_from_result(find_oscillation_result::Dict, total_per
     reltol = hyperparameters["reltol"]
     solver = hyperparameters["solver"]
     maxiters = hyperparameters["maxiters"]
-    random_seed = hyperparameters["random_seed"]
     # Model
     model = find_oscillation_result["model"]
     nodes = find_oscillation_result["nodes"]
     # Parameters. Convert them to the proper format
     parameter_sets = Matrix(find_oscillation_result["parameter_sets"]["oscillatory"][!, 2:end])
     # Initial conditions
-    initial_conditions = extract_final_state_from_result(find_oscillation_result["simulation_result"], nodes)
+    oscillatory_df = filter(row -> row["is_oscillatory"] == true, find_oscillations_result["simulation_result"])
+    initial_conditions = extract_final_state_from_result(oscillatory_df, nodes)
     # Simulation times
-    #TODO: Obtain simulation times
-
+    simulation_times = calculate_simulation_times_from_result(oscillatory_df, total_periods)
     # Simulate
-
     #TODO: Need to make time series data be an output of simulate_ODEs (or create a new function)
     simulation_data = simulate_ODEs(model, perturbed_parameter_sets, equilibration_data["final_state"], simulation_times;
                                     solver=solver, abstol=abstol, reltol=reltol, maxiters=maxiters, fft_multiplier=fft_multiplier) 
