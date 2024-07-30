@@ -160,6 +160,44 @@ function simulate_ODEs(model::ReactionSystem, parameter_sets::AbstractArray, ini
 end
 
 
+function simulate_and_save_time_series(model::ReactionSystem, parameter_sets::AbstractArray, initial_conditions::AbstractVector, simulation_times::AbstractVector;
+                                       solver=RadauIIA5(), abstol=1e-7, reltol=1e-4, maxiters=1e7, total_periods=4, timepoints_per_period=100)
+    number_of_psets = size(parameter_sets, 1)
+    # Define problem and output functions for EnsembleProblem
+    function prob_function(prob::ODEProblem, i, ~)
+        idx = Int(i)
+        remake(prob, u0=initial_conditions[idx], tspan=(0.0, simulation_times[idx]), p=parameter_sets[idx,:])
+    end
+
+    function output_func(sol::ODESolution, i)
+        # Solution comes sampled at irregular times (but those times are where the solution changes the most,
+        # which is very important for spiky solutions).
+        # We interpolate the solution to a regular grid to save it, but we don't loose the irregular grid,
+        # because we want to keep the time points where the solution changes the most. So the output is 
+        # sampled at irregular intervals.
+        min_time = minimum(sol.t)
+        max_time = maximum(sol.t)
+        irregular_time_grid = sol.t
+        regular_time_grid = range(min_time, max_time, length=timepoints_per_period * total_periods)
+        new_time_grid = sort(vcat(irregular_time_grid, regular_time_grid))
+        new_time_grid = unique(new_time_grid)
+        new_solution = sol(new_time_grid)
+        u = transpose(hcat(new_solution.u...))
+        output = hcat(new_time_grid, u)
+        return ([output], false)
+    end
+
+    ode_problem = ODEProblem(model, initial_conditions[1], (0.0, simulation_times[1]), parameter_sets[1,:])
+    ensemble_problem = EnsembleProblem(ode_problem, prob_func=prob_function, safetycopy=false, output_func=output_func)
+    trajectories = solve(ensemble_problem, solver, EnsembleThreads(), trajectories=number_of_psets,
+                       abstol=abstol, reltol=reltol, maxiters=maxiters, dense=true)
+    
+    # trajectories = [simulation.u[i][1] for i=axes(simulation.u, 1)]
+
+    return trajectories
+end
+
+
 """
     calculate_simulation_times(equilibration_data::Dict, equilibration_times::AbstractVector; simulation_time_multiplier=10)
 
@@ -205,7 +243,7 @@ Calculates the simulation times for each parameter set in a model using the freq
 """
 function calculate_simulation_times_from_result(simulation_result::DataFrame, simulation_time_multiplier::Real) 
     frequency_df = select(simulation_result, r"frequency_*")
-    single_frequencies = mean.(eachrow(original_frequency_df))
+    single_frequencies = mean.(eachrow(frequency_df))
     simulation_times = simulation_time_multiplier ./ single_frequencies
     return simulation_times
 end

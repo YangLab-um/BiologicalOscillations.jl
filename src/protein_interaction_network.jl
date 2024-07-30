@@ -446,7 +446,7 @@ time_series = Dict("model" => "ReactionSystem of the protein interaction network
                    "time_series" => "Dataframe containing time series data for each parameter set")
 ```
 """
-function obtain_time_series_from_result(find_oscillation_result::Dict, total_periods::Int, total_timepoints::Int, hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
+function obtain_time_series_from_result(find_oscillation_result::Dict, total_periods::Int; timepoints_per_period::Int=100, hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
     # Unpack hyperparameters
     abstol = hyperparameters["abstol"]
     reltol = hyperparameters["reltol"]
@@ -458,12 +458,13 @@ function obtain_time_series_from_result(find_oscillation_result::Dict, total_per
     # Parameters. Convert them to the proper format
     parameter_sets = Matrix(find_oscillation_result["parameter_sets"]["oscillatory"][!, 2:end])
     # Initial conditions
-    oscillatory_df = filter(row -> row["is_oscillatory"] == true, find_oscillations_result["simulation_result"])
+    oscillatory_df = filter(row -> row["is_oscillatory"] == true, find_oscillation_result["simulation_result"])
     initial_conditions = extract_final_state_from_result(oscillatory_df, nodes)
     # Simulation times
     simulation_times = calculate_simulation_times_from_result(oscillatory_df, total_periods)
     # Simulate
-    #TODO: Need to make time series data be an output of simulate_ODEs (or create a new function)
-    simulation_data = simulate_ODEs(model, perturbed_parameter_sets, equilibration_data["final_state"], simulation_times;
-                                    solver=solver, abstol=abstol, reltol=reltol, maxiters=maxiters, fft_multiplier=fft_multiplier) 
+    time_series = simulate_and_save_time_series(model, parameter_sets, initial_conditions, simulation_times;
+                                                solver=solver, abstol=abstol, reltol=reltol, maxiters=maxiters,
+                                                total_periods=total_periods, timepoints_per_period=timepoints_per_period)
+    return time_series
 end
