@@ -24,6 +24,5 @@ jobs:
           git checkout main
           git pull
           git checkout ${{ env.BRANCH_NAME }}
-          git merge --no-ff origin/main -m "Merge into viz branch"
+          git merge --allow-unrelated-histories --no-ff origin/main -m "Merge into viz branch"
           git push -u origin ${{ env.BRANCH_NAME }}
-
