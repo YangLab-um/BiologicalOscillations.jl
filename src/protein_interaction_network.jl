@@ -423,3 +423,48 @@ function simulate_pin_parameter_perturbations(find_oscillation_result::Dict, per
     perturbation_result["simulation_result"][!, "perturbed_parameter_index"] = perturbed_parameter_index
     return perturbation_result
 end
+
+
+"""
+    obtain_time_series(find_oscillation_result::Dict, total_periods::Int, total_timepoints::Int, hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
+
+Obtains time series data for the oscillatory parameter sets in `find_oscillation_result`.
+
+# Arguments (Required)
+- `find_oscillation_result::Dict`: Result of the oscillatory parameter set search generated with [`find_pin_oscillations`](@ref)
+- `total_periods::Int`: Total number of periods to simulate
+- `total_timepoints::Int`: Total number of timepoints in the output time series
+
+# Arguments (Optional)
+- `hyperparameters::Dict`: Dictionary of hyperparameters for the algorithm. Default values are defined in [`DEFAULT_PIN_HYPERPARAMETERS`](@ref).
+
+# Returns
+- `time_series::Dict`: A dictionary containing the time series data for the oscillatory parameter sets. Output is encoded as:
+```julia
+time_series = Dict("model" => "ReactionSystem of the protein interaction network",
+                   "parameter_sets" => "Dataframe of parameter sets",
+                   "time_series" => "Dataframe containing time series data for each parameter set")
+```
+"""
+function obtain_time_series_from_result(find_oscillation_result::Dict, total_periods::Int; timepoints_per_period::Int=100, hyperparameters=DEFAULT_PIN_HYPERPARAMETERS)
+    # Unpack hyperparameters
+    abstol = hyperparameters["abstol"]
+    reltol = hyperparameters["reltol"]
+    solver = hyperparameters["solver"]
+    maxiters = hyperparameters["maxiters"]
+    # Model
+    model = find_oscillation_result["model"]
+    nodes = find_oscillation_result["nodes"]
+    # Parameters. Convert them to the proper format
+    parameter_sets = Matrix(find_oscillation_result["parameter_sets"]["oscillatory"][!, 2:end])
+    # Initial conditions
+    oscillatory_df = filter(row -> row["is_oscillatory"] == true, find_oscillation_result["simulation_result"])
+    initial_conditions = extract_final_state_from_result(oscillatory_df, nodes)
+    # Simulation times
+    simulation_times = calculate_simulation_times_from_result(oscillatory_df, total_periods)
+    # Simulate
+    time_series = simulate_and_save_time_series(model, parameter_sets, initial_conditions, simulation_times;
+                                                solver=solver, abstol=abstol, reltol=reltol, maxiters=maxiters,
+                                                total_periods=total_periods, timepoints_per_period=timepoints_per_period)
+    return time_series
+end
