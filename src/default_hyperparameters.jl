@@ -68,7 +68,7 @@ DEFAULT_PIN_PARAMETER_LIMITS = Dict(
     "α" => (1e-2, 1e2), 
     "β" => (1e-2, 1e2), 
     "γ" => (1e2, 1e4), 
-    "κ" => (0.2, 1.0), 
+    "κ" => (1e-2, 1.0), 
     "η" => (1.0, 5.0)
 )
 
@@ -84,7 +84,7 @@ DEFAULT_PIN_SAMPLING_SCALES = Dict(
     "α" => "log", 
     "β" => "log", 
     "γ" => "log", 
-    "κ" => "linear", 
+    "κ" => "log", 
     "η" => "linear"
 )
 
@@ -116,7 +116,7 @@ DEFAULT_PIN_HYPERPARAMETERS = Dict(
     "random_seed" => 1234,
     "initial_conditions" => NaN,
     "equilibration_time_multiplier" => 10,
-    "dimensionless_time" => true,
+    "dimensionless_time" => false,
     "parameter_limits" => DEFAULT_PIN_PARAMETER_LIMITS,
     "sampling_scales" => DEFAULT_PIN_SAMPLING_SCALES,
     "sampling_style" => "lhc",
@@ -194,7 +194,7 @@ DEFAULT_GRN_HYPERPARAMETERS = Dict(
     "random_seed" => 1234,
     "initial_conditions" => NaN,
     "equilibration_time_multiplier" => 10,
-    "dimensionless_time" => true,
+    "dimensionless_time" => false,
     "parameter_limits" => DEFAULT_GRN_PARAMETER_LIMITS,
     "sampling_scales" => DEFAULT_GRN_SAMPLING_SCALES,
     "sampling_style" => "lhc",
