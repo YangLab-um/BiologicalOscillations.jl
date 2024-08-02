@@ -463,8 +463,8 @@ function obtain_time_series_from_result(find_oscillation_result::Dict, total_per
     # Simulation times
     simulation_times = calculate_simulation_times_from_result(oscillatory_df, total_periods)
     # Simulate
-    time_series = simulate_and_save_time_series(model, parameter_sets, initial_conditions, simulation_times;
-                                                solver=solver, abstol=abstol, reltol=reltol, maxiters=maxiters,
-                                                total_periods=total_periods, timepoints_per_period=timepoints_per_period)
-    return time_series
+    result = simulate_and_save_time_series(model, parameter_sets, initial_conditions, simulation_times;
+                                           solver=solver, abstol=abstol, reltol=reltol, maxiters=maxiters,
+                                           total_periods=total_periods, timepoints_per_period=timepoints_per_period)
+    return result
 end
