@@ -99,6 +99,37 @@ end
 
 
 """
+    calculate_spectral_entropy(ode_solution::ODESolution, sampling::Int, fft_points::Int)
+
+Calculate the spectral entropy of each signal in `ode_solution`.
+
+# Arguments
+- `ode_solution::ODESolution`: The full output of the `solve()` function from `DifferentialEquations.jl`
+- `sampling::Int`: Number of points to be used for uniform re-sampling of `ode_solution`. The same sampling is used for all signals
+- `fft_points::Int`: Number of points in the frequency spectrum
+
+# Returns
+- `entropies::Vector{Real}`: Vector containing the spectral entropy for each signal
+"""
+function calculate_spectral_entropy(ode_solution::ODESolution, sampling::Int, fft_points::Int)
+    number_of_signals = length(ode_solution.u[1])
+    entropies = fill(NaN, number_of_signals)
+    signal_sampling = LinRange(ode_solution.t[1], ode_solution.t[end], sampling)
+    sampling_frequency = sampling / (ode_solution.t[end] - ode_solution.t[1])
+    for i in 1:number_of_signals
+        # Remove mean -- Avoids a dominant low frequency caused by mean ≠ 0
+        signal = ode_solution(signal_sampling)[i,:] .- mean(ode_solution(signal_sampling)[i,:])
+        spectrum = periodogram(signal; fs=sampling_frequency, nfft=fft_points)
+        probability = spectrum.power ./ sum(spectrum.power)
+        entropy = -sum(probability .* log.(probability)) / log(fft_points)
+        entropies[i] = entropy
+    end
+
+    return entropies
+end
+
+
+"""
     is_ODE_oscillatory(frequency_data::Dict, amplitude_data::Dict, freq_variation_threshold=0.05, power_threshold=1e-7, amp_variation_threshold=0.05)
 
 Returns true if an `ODESolution` is oscillatory based on the calculated frequency and amplitude. False otherwise.

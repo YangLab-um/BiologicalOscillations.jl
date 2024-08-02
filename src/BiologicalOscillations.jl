@@ -12,7 +12,7 @@ export calculate_oscillatory_status, generate_find_oscillations_output, create_r
 export feature_change_from_perturbation, calculate_perturbed_parameter_index, create_single_parameter_perturbation
 export extract_final_state_from_result, calculate_simulation_times_from_result, simulate_and_save_time_series
 # Feature calculation
-export calculate_main_frequency, calculate_amplitude, is_ODE_oscillatory
+export calculate_main_frequency, calculate_amplitude, is_ODE_oscillatory, calculate_spectral_entropy
 # Protein interaction network
 export protein_interaction_network, pin_parameters, pin_timescale, pin_parameter_sets
 export pin_equilibration_times, find_pin_oscillations, pin_nodes_edges
