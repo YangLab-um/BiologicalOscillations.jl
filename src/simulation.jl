@@ -161,7 +161,7 @@ end
 
 
 function simulate_and_save_time_series(model::ReactionSystem, parameter_sets::AbstractArray, initial_conditions::AbstractVector, simulation_times::AbstractVector;
-                                       solver=RadauIIA5(), abstol=1e-7, reltol=1e-4, maxiters=1e7, total_periods=4, timepoints_per_period=100)
+                                       solver=RadauIIA5(), abstol=1e-7, reltol=1e-4, maxiters=1e7, total_periods=4, timepoints_per_period=100, fft_multiplier=10)
     number_of_psets = size(parameter_sets, 1)
     # Define problem and output functions for EnsembleProblem
     function prob_function(prob::ODEProblem, i, ~)
@@ -183,18 +183,22 @@ function simulate_and_save_time_series(model::ReactionSystem, parameter_sets::Ab
         new_time_grid = unique(new_time_grid)
         new_solution = sol(new_time_grid)
         u = transpose(hcat(new_solution.u...))
-        output = hcat(new_time_grid, u)
-        return ([output], false)
+        time_series = hcat(new_time_grid, u)
+        spectral_entropies = calculate_spectral_entropy(sol, length(sol.t), fft_multiplier * length(sol.t))
+
+        return ([time_series, spectral_entropies], false)
     end
 
     ode_problem = ODEProblem(model, initial_conditions[1], (0.0, simulation_times[1]), parameter_sets[1,:])
     ensemble_problem = EnsembleProblem(ode_problem, prob_func=prob_function, safetycopy=false, output_func=output_func)
-    trajectories = solve(ensemble_problem, solver, EnsembleThreads(), trajectories=number_of_psets,
+    simulation = solve(ensemble_problem, solver, EnsembleThreads(), trajectories=number_of_psets,
                        abstol=abstol, reltol=reltol, maxiters=maxiters, dense=true)
     
-    # trajectories = [simulation.u[i][1] for i=axes(simulation.u, 1)]
+    trajectories = [simulation.u[i][1] for i=axes(simulation.u, 1)]
+    entropies = [simulation.u[i][2] for i=axes(simulation.u, 1)]
+    output = Dict("trajectories" => trajectories, "spectral_entropies" => entropies)
 
-    return trajectories
+    return output
 end
 
 
